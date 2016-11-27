@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slash in the attribute's name</title>
+</head>
+<body>
+  <h2>Slash in the attribute's name</h2>
+  <p>Looks that Chrome treats the slash in attr names as whitespace, even if it is inside quotes.</p>
+  <pre>
+
+    <p>`attr/= foo` has 3 attr: `attr`, `=` and `foo`, no values</p>
+    <div attr/= foo>1</div>
+    <hr>
+
+    <p>`attr/ =foo` has 2 attr: `attr` and `=foo` (outerHTML: `&lt;div attr="" =foo=""&gt;`)</p>
+    <div attr/ =foo>2</div>
+    <hr>
+
+    <p>`at/tr =foo` has 2 attr: `at` and `tr`="foo"</p>
+    <div at/tr =foo>3</div>
+    <hr>
+
+    <p>`"at/tr" =foo` has 2 attr: `"at` and `tr"`="foo"</p>
+    <div "at/tr" =foo>4</div>
+    <hr>
+
+    <p>`/=foo` has 1 attr: `=foo`</p>
+    <div /=foo>5</div>
+    <hr>
+
+    <p>`/ =foo` has 1 attr: `=foo`</p>
+    <div / =foo>6</div>
+    <hr>
+
+    <p>`"/ "=foo` has 1 attr: `"` with no value (outerHTML is `&lt;div "=""&gt;`)<br>
+      (I was waiting 2 attr here: `"` and `"`="foo")</p>
+    <div "/ "=foo>7</div>
+    <hr>
+
+    <p>`"/ " = foo` the same as sample 7: `"`</p>
+    <div "/ " = foo>8</div>
+  </pre>
+  <p>END</p>
+</body>
+</html>

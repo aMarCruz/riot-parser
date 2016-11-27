@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Malformed Attributes</title>
+</head>
+<body>
+  <h2>Malformed Attributes</h2>
+  <pre>
+
+    <div attr "foo">1</div>
+    <hr>
+
+    <div attr "foo=bar">2</div>
+    <hr>
+
+    <div attr "=bar>3</div>
+    <hr>
+
+    <div =attr >4</div>
+    <hr>
+
+    <div = attr >5</div>
+
+    <hr>
+    <div some=<</div>
+
+    <hr>
+    <<div some=">">6</div>
+
+  </pre>
+  <p>END</p>
+</body>
+</html>

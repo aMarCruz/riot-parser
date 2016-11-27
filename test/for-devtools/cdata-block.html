@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CDATA</title>
+</head>
+<body>
+  <h2>CDATA block</h2>
+  <p>In HTML, a CDATA block without hidding becomes a comment, so it is unuseful alone.</p>
+
+  <div>Here is a CDATA section: <![CDATA[  < > & ]]> with all kinds of unescaped text. </div>
+  <hr>
+  <p>
+  <![CDATA[
+  my text & me
+  using and <and >
+  ]]>
+  </p>
+  <hr>
+  <!-- <![CDATA[
+  my text & me
+  using <and >
+  ]]> -->
+  <hr>
+  <div some="<![CDATA[ "foo ]]>">text</div>
+  <hr>
+  <script type="riot/tag">
+    <script>
+    my text & me
+    using <and >
+    <\/script>
+  </script>
+</body>
+</html>

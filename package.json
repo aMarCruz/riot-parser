@@ -1,0 +1,51 @@
+{
+  "name": "riot-parser",
+  "version": "0.1.1",
+  "description": "The riot parser for HTML files",
+  "main": "./dist/htmlparser.js",
+  "module": "./dist/htmlparser.es.js",
+  "jsnext:main": "./dist/htmlparser.es.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=4.0"
+  },
+  "scripts": {
+    "test": "mocha",
+    "lint": "eslint src test/index.js",
+    "pretest": "npm run build:cjs",
+    "build": "rm -rf dist/* && npm run build:cjs && npm run build:es6",
+    "build:cjs": "node ./build.js",
+    "build:es6": "node ./build.js es",
+    "prepublish": "npm run lint && npm test && npm run build:es6"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/riot/riot-parser"
+  },
+  "keywords": [
+    "html",
+    "html5",
+    "parser",
+    "javascript"
+  ],
+  "author": {
+    "name": "riot",
+    "email": "amarcruzbox-git@yahoo.com",
+    "url": "https://github.com/riot"
+  },
+  "homepage": "https://github.com/riot/riot-parser",
+  "bugs": "https://github.com/riot/riot-parser/issues",
+  "devDependencies": {
+    "eslint": "^3.11.0",
+    "expect": "^1.20.2",
+    "mocha": "^3.2.0",
+    "rollup": "^0.36.4",
+    "rollup-plugin-buble": "^0.14.0",
+    "rollup-plugin-cleanup": "^0.1.4",
+    "rollup-plugin-jscc": "^0.3.3"
+  }
+}

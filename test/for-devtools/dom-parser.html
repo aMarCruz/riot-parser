@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DOMParser Tester</title>
+</head>
+<body>
+  <h2>DOMParser Tester</h2>
+
+  <form id="form1">
+    <span class="prompt">Document type:</span> <select name="ftype" id="_type">
+      <option value="text/html" selected>text&#47;html</option>
+      <option value="text/xml">text&#47;xml</option>
+      <option value="application/xml">application&#47;xml</option>
+      <option value="application/xhtml+xml">application&#47;xhtml+xml</option>
+      <option value="image/svg+xml">image/svg&#47;xml</option>
+    </select>
+    <br>
+    <span class="prompt">Enter the markup:</span><br>
+    <textarea name="fmarkup" id="_markup" rows="10"></textarea>
+    <br>
+    <button type="submit" name="fparse" id="_parse">Parse</button>
+    <br>
+    <span class="prompt">Result:</span><br>
+    <div style="border:1px solid black">
+      <pre id="_result"></pre>
+    </div>
+  </form>
+
+  <script>
+    var form = document.getElementById('form1')
+    form1.onsubmit = function () { return false }
+    form1.fparse.addEventListener('click', parseIt)
+
+    function parseIt () {
+      var type    = form.ftype[form.ftype.selectedIndex].value
+      var str     = form.fmarkup.value
+      var output  = document.getElementById('_result')
+      var parser  = new DOMParser()
+      var result
+      try {
+        result = parser.parseFromString(str, type)
+        var body = result.getElementsByTagName('body')[0]
+        output.textContent = body.innerHTML
+          //.replace(/&/g, '&amp;')
+          //.replace(/>/g, '&gt;')
+          //.replace(/</g, '&lt;')
+          //.replace(/\n/g, '<br>')
+      } catch (e) {
+        result = '<span style="color:red">' + e.message + '</span>'
+        output.innerHTML = result
+      }
+    }
+  </script>
+</body>
+</html>

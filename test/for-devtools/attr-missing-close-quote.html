@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attribute missing close quote</title>
+</head>
+<body>
+  <h2>Attribute missing close quote</h2>
+
+  <pre>
+    &lt;div a=&quot;1&gt;&lt;span id=&quot;foo&quot;&gt;xxx
+    <p>has 2 attr: `a`="1&gt;&lt;span id=" and `foo"` with no value</p>
+
+    <!--div a="1><span id="foo">xxx
+    <hr-->
+
+    <p>unfinished attribute #1</p>
+    <div foo="bar" bee="baz>
+      </div>
+  </pre>"
+</body>
+</html>

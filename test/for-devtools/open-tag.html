@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Openning Tags</title>
+</head>
+<body>
+  <h2>Openning tags with strange characters</h2>
+
+  <hr>
+  <-foo></-foo>
+
+  <hr>
+  &lt;/-&gt; generates:<br>
+  </->
+
+  <hr>
+  &lt;foo&gt;&lt;&gt;&lt;/foo&gt; generates:<br>
+  <foo><></foo>
+
+  <hr>
+  &lt;&lt;foo&gt;&lt;/foo&gt; generates:<br>
+  <<foo></foo>
+
+  <hr>
+  &lt;/!&gt; generates:<br>
+  </!>
+
+  <hr>
+  &lt;&amp;&gt;&lt;/&amp;&gt; generates:<br>
+  <&></&>
+
+  <hr>
+  <p/>foo<p>Foo</p><p/>bar<p/>
+
+</body>
+</html>
