@@ -11,6 +11,7 @@ module.exports = {
     Whitespace normalization, incluing text in `style` sections (Optional removal of only-whitespace text).
   */
   'discards extra whitespace in text nodes': {
+    options: { compact: true },
     data: '\n\n<i>\n the  <b> bold</b> text \t\n</i> \n',
     expected: ' <i> the <b> bold</b> text </i> '
   },
@@ -36,12 +37,12 @@ module.exports = {
     expected: '<body> <!--\n  this is\n  a comment\n\n --> </body>'
   },
 
-  '`compact` option removes whitespace-only text nodes': {
+  '`compact` option replaces whitespace-only text nodes with one space': {
     options: {
       builder: { compact: true }
     },
     data: '<div>\n Line one\n<br> \t\n<br>\nline two<font> x </font>\n </div>',
-    expected: '<div> Line one <br><br> line two<font> x </font></div>'
+    expected: '<div> Line one <br> <br> line two<font> x </font> </div>'
   },
 
   /*

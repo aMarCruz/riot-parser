@@ -1,7 +1,7 @@
 
 ## Openning Tags
 
-Start with a `<` followed by a [tag name](#tag-names) or the character `!` that signals the start of a comment, `DOCTYPE` or `CDATA` declaration.
+Start with a `<` followed by a [tag name](#tag-names) or the character `!` that signals the start of a comment, `DOCTYPE` or `CDATA` declaration (last two are parsed as comments).
 
 Must there's no spaces between the `<` and the tag name (or `!`), else this is simple text.
 
@@ -9,8 +9,7 @@ Against the html5 specs, tags ending with `/>` are preserved as self-closing tag
 
 ## Tag names
 
-Tag names must start with a 7 bit letter (`[a-zA-Z]`) followed by zero o more ISO-8859-1 characters, except those in
-`[\x00-\x2F\x7F-\xA0>/]`.
+Tag names must start with a 7 bit letter (`[a-zA-Z]`) followed by zero o more ISO-8859-1 characters, except those in `[\x00-\x2F\x7F-\xA0>/]`.
 
 If the first letter is not found, it becomes simple text.
 Any non-recognized character ends the tag name (`/` behaves like whitespace).

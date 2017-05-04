@@ -2,14 +2,14 @@
   http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 */
 
-function isEmpty (v) {
+function isEmpty(v) {
   if (!v) return true
   return typeof v == 'object'
     ? Array.isArray(v) ? !v.length : !Object.keys(v).length
     : false
 }
 
-function compareObjects (a, b) {
+function compareObjects(a, b) {
   'use strict'
 
   var p

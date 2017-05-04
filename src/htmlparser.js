@@ -3,72 +3,82 @@
  * @version v$_VERSION
  */
 
-import assign from './utils/object-assign-node'
-import parseExpr from './expr-parser'
+import assign from './utils/assign'
+import exprParser from './expr-parser'
 
 //#if !_T
 import $_T from './nodetypes'
 //#endif
 
 
-// The htmlParser =========================================
+// The HtmlParser class ===============================================
 
-/*
-  It creates 4 node types, all of them has a start/end position
-  (end points to the character following the node).
+function HtmlParser(options) {
 
-  TAG -- has `name` (ex. "div" or "/div"), `selfclose`, and `attrs` props.
-  TEXT -- can have an `expr` property
-  TEXT, COMMENT, DOCTYPE -- has no props other than `start`/`end`.
-
-  TAG.attrs -- array of objects with `name`, `value` and `expr` props.
-
-  expr -- array of objects with `loc`, its `start`/`end` props points
-  to position into the parent, but loc is relative to the whole buffer.
-*/
-
-export default function htmlParser(options) {
-
-  // Matches the start of valid tags names; used with the first 2 chars after '<'
-  const R_TAG_START = /^\/?[a-zA-Z]/
-
-  // Matches valid tags names AFTER the validation with R_TAG_START.
-  // $1: tag name including any '/', $2: non self-closing brace (>) w/o attributes
-  const R_TAG = /(\/?.[^\s>/]*)\s*(>)?/g
-
-  // Matches the closing tag of a `script` block
-  const R_SCRIPT_CLOSE = /<\/script\s*>/gi
-
-  // Matches the closing tag of a `style` block
-  const R_STYLE_CLOSE = /<\/style\s*>/gi
-
-  // Matches an attribute name-value pair (both can be empty).
-  // $1: attribute name, $2: value including any quotes
-  const R_ATTR_NAME_VAL = /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g
-
-
-  options = assign({
+  this.options = assign({
     comments: false,
     brackets: ['{', '}']
   }, options)
 
-  debugger
-  const _parseExpr = parseExpr(options).parse
+  this.parseExpr = exprParser(this.options).parse
+
+  this.parse = this._parse.bind(this)
+
+}
 
 
-  return function parse(data) {
+// HtmlParser methods and properties ==================================
 
+assign(HtmlParser.prototype, {
+
+  nodeTypes: {
+    TAG:      $_T.TAG,          // ELEMENT_NODE (tag)
+    ATTR:     $_T.ATTR,         // ATTRIBUTE_NODE (attribute)
+    TEXT:     $_T.TEXT,         // TEXT_NODE (#text)
+    COMMENT:  $_T.COMMENT,      // COMMENT_NODE (#comment)
+    DOCTYPE:  $_T.DOCTYPE,      // DOCUMENT_TYPE_NODE (html)
+    EXPR:     $_T.EXPR          // DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC (riot)
+  },
+
+  // Matches the start of valid tags names; used with the first 2 chars after '<'
+  TAG_START: /^\/?[a-zA-Z]/,
+
+  // Matches valid tags names AFTER the validation with R_TAG_START.
+  // $1: tag name including any '/', $2: non self-closing brace (>) w/o attributes
+  TAG: /(\/?.[^\s>/]*)\s*(>)?/g,
+
+  // Matches the closing tag of a `script` block
+  SCRIPT_CLOSE: /<\/script\s*>/gi,
+
+  // Matches the closing tag of a `style` block
+  STYLE_CLOSE: /<\/style\s*>/gi,
+
+  // Matches an attribute name-value pair (both can be empty).
+  // $1: attribute name, $2: value including any quotes
+  ATTR_START: /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g,
+
+  /*
+    It creates a raw output of pseudo-nodes with one of three different types,
+    all of them having a start/end information.
+    (`end` points to the character following the node).
+
+    TAG     -- has `name` (ex. "div" or "/div"), `selfclose`, and `attrs`.
+    TEXT    -- can have an `expr` property in addition to start/end.
+    COMMENT -- has no props other than start/end.
+
+    `TAG.attrs` is an array of objects with `name`, `value` and `expr` props.
+
+    `expr` is an array of objects with start/end properties, relative to the
+    whole buffer.
+  */
+  _parse(data) {
+
+    const output = []
     const state = {
       pos: 0,
-      output: [],
       last: null,
-      loc: { pos: 0, line: 1, col: 0 },
-      options: options
-    }
-
-    const result = {
-      data: data,
-      output: state.output
+      options: this.options,
+      output
     }
 
     let mode = $_T.TEXT
@@ -76,13 +86,13 @@ export default function htmlParser(options) {
     while (state.pos < data.length) {
 
       if (mode === $_T.TAG) {
-        mode = _parseTag(state, data)
+        mode = this.parseTag(state, data)
 
       } else if (mode === $_T.ATTR) {
-        mode = _parseAttr(state, data)
+        mode = this.parseAttr(state, data)
 
       } else if (mode === $_T.TEXT) {
-        mode = _parseText(state, data)
+        mode = this.parseText(state, data)
 
       } else {
         break
@@ -90,27 +100,59 @@ export default function htmlParser(options) {
     }
 
     if (mode !== $_T.TEXT) {
-      _error(state, 'Unexpected end of file')
+      this.error(state, data, 'Unexpected end of file')
     }
 
-    return result
-  }
+    return { data, output }
+  },
 
-  // ------------------------------------------------------
-  // Private methods
-  // ------------------------------------------------------
+  /**
+   * Minimal error handler.
+   * The `state` object includes the buffer (`data`)
+   * The error position (`loc`) contains line (base 1) and col (base 0).
+   *
+   * @param   {object} state    - Current parser state
+   * @param   {object} loc      - Line and column of the error
+   * @param   {string} message  - Error message
+   */
+  displayError(state, loc, message) {
+    message = `[${loc.line},${loc.col}]: ${message}`
+    throw new Error(message)
+  },
 
+  /**
+   * On error translates the current position to line, col and calls the
+   * error method of the class.
+   *
+   * @param   {object} state - Current parser state
+   * @param   {string} data  - Processing buffer
+   * @param   {string} msg   - Error message
+   * @param   {number} [pos] - Error position
+  */
+  error(state, data, msg, pos) {
+    if (pos == null) pos = state.pos
 
-  function _error(_state, msg) {
-    throw new Error(msg)
-  }
+    // count unix/mac/win eols
+    const line = (data.slice(0, pos).match(/\r\n?|\n/g) || '').length + 1
 
+    let col = 0
+    while (--pos >= 0 && !/[\r\n]/.test(data[pos])) {
+      ++col
+    }
 
-  function _escape(src) {
-    const s = src[0] === '^' ? `\\${src}` : src
-    return s.replace(/(?=[[()\-*+?.$|])/g, '\\')
-  }
+    state.data = data
+    this.displayError(state, { line, col }, msg)
+  },
 
+  /**
+   * Escape special characters for use in a regex.
+   *
+   * @param   {string} src - String to escape
+   * @returns {string} The escaped string.
+   */
+  _escape(src) {
+    return src.replace(/(?=[[^()\-*+?.$|])/g, '\\')
+  },
 
   /**
    * @param   {number}      type  - Numeric node type
@@ -121,7 +163,7 @@ export default function htmlParser(options) {
    *                                the text, so this is mustly the `re.lastIndex` value
    * @returns {object} A new node.
    */
-  function _newNode(type, name, start, end) {
+  newNode(type, name, start, end) {
     const node = { type, start, end }
 
     if (name) {
@@ -129,249 +171,245 @@ export default function htmlParser(options) {
     }
 
     return node
-  }
-
+  },
 
   /**
    * Stores a comment.
    *
-   * @param   {Object}  _state - Current parser state
-   * @param   {number}  start  - Start position of the tag
-   * @param   {number}  end    - Ending position (last char of the tag)
+   * @param   {Object}  state - Current parser state
+   * @param   {number}  start - Start position of the tag
+   * @param   {number}  end   - Ending position (last char of the tag)
    */
-  function _pushComment(_state, start, end) {
-    _state.last = null
-    _state.pos  = end
-    _state.output.push(_newNode($_T.COMMENT, null, start, end))
-  }
-
+  pushComment(state, start, end) {
+    state.last = null
+    state.pos  = end
+    if (state.options.comments) {
+      state.output.push(this.newNode($_T.COMMENT, null, start, end))
+    }
+  },
 
   /**
    * Stores text in the last text node, or creates a new one if needed.
    *
-   * @param   {Object}  _state - Current parser state
+   * @param   {Object}  state  - Current parser state
    * @param   {number}  start  - Start position of the tag
    * @param   {number}  end    - Ending position (last char of the tag)
    * @param   {Array}   [expr] - Found expressions
    */
-  function _pushText(_state, start, end, expr) {
-    const q = _state.last
+  pushText(state, start, end, expr) {
+    const q = state.last
 
-    _state.pos = end
+    state.pos = end
     if (q && q.type === $_T.TEXT) {
       q.end = end
     } else {
-      _state.last = _newNode($_T.TEXT, null, start, end)
-      _state.output.push(_state.last)
+      state.last = this.newNode($_T.TEXT, null, start, end)
+      state.output.push(state.last)
     }
 
     if (expr && expr.length) {
-      const q2 = _state.last
+      const q2 = state.last
       q2.expr = q2.expr ? q2.expr.concat(expr) : expr
     }
-  }
-
+  },
 
   /**
    * Pushes a new *tag* and set `last` to this, so any attributes
    * will be included on this and shifts the `end`.
    *
-   * @param   {object}  _state - Current parser state
-   * @param   {object}  type   - Like nodeType
-   * @param   {object}  name   - Name of the node including any slash
-   * @param   {number}  start  - Start position of the tag
-   * @param   {number}  end    - Ending position (last char of the tag)
+   * @param   {object}  state - Current parser state
+   * @param   {object}  type  - Like nodeType
+   * @param   {object}  name  - Name of the node including any slash
+   * @param   {number}  start - Start position of the tag
+   * @param   {number}  end   - Ending position (last char of the tag)
    */
-  function _pushTag(_state, type, name, start, end) {
-    const tag = _newNode(type, name, start, end)
+  pushTag(state, type, name, start, end) {
+    const tag = this.newNode(type, name, start, end)
 
     tag.attrs = []
-    _state.pos = end
-    _state.output.push(_state.last = tag)
-  }
-
+    state.pos = end
+    state.output.push(state.last = tag)
+  },
 
   /**
    * Pushes a new attribute and shifts the `end` position of the tag (`last`).
    *
-   * @param   {Object}  _state - Current parser state
-   * @param   {Object}  attr   - Attribute
+   * @param   {Object}  state - Current parser state
+   * @param   {Object}  attr  - Attribute
    */
-  function _pushAttr(_state, attr) {
-    const q = _state.last
+  pushAttr(state, attr) {
+    const q = state.last
 
     //assert(q && q.type === Mode.TAG, 'no previous tag for the attr!')
-    _state.pos = q.end = attr.end
+    state.pos = q.end = attr.end
     q.attrs.push(attr)
-  }
-
+  },
 
   /**
    * Parse the tag following a '<' character, or delegate to other parser
    * if an invalid tag name is found.
    *
-   * @param   {object} _state - Parser state
-   * @param   {string} _data  - Buffer to parse
+   * @param   {object} state - Parser state
+   * @param   {string} data  - Buffer to parse
    * @returns {number} New parser mode
    */
-  function _parseTag(_state, _data) {
-    const pos   = _state.pos                // pos of the char following '<'
+  parseTag(state, data) {
+    const pos   = state.pos                 // pos of the char following '<'
     const start = pos - 1                   // pos of '<'
-    const str   = _data.substr(pos, 2)      // first two chars following '<'
+    const str   = data.substr(pos, 2)       // first two chars following '<'
 
     if (str[0] === '!') {                   // doctype or comment?
-      return _parseComment(_state, _data, start)
+      return this.parseComment(state, data, start)
     }
 
-    if (R_TAG_START.test(str)) {            // ^\/?[a-zA-Z]
-      R_TAG.lastIndex = pos
-      const match = R_TAG.exec(_data)       // (\/?.[^\s>/]*)\s*(>)? g
-      const end   = R_TAG.lastIndex
+    if (this.TAG_START.test(str)) {         // ^\/?[a-zA-Z]
+      const re = this.TAG
+      re.lastIndex = pos
+      const match = re.exec(data)           // (\/?.[^\s>/]*)\s*(>)? g
+      const end   = re.lastIndex
       const name  = match[1].toLowerCase()  // $1: tag name including any '/'
 
       if (name === 'script' || name === 'style') {
-        _state.scryle = name                // used by _parseText
+        state.scryle = name                // used by parseText
       }
 
-      _pushTag(_state, $_T.TAG, name, start, end)
+      this.pushTag(state, $_T.TAG, name, start, end)
 
-      // only '>' can ends the tag here, the '/' is handled in _parseAttr
+      // only '>' can ends the tag here, the '/' is handled in parseAttr
       if (match[2] !== '>') {               // $2: non self-closing brace w/o attr
         return $_T.ATTR
       }
 
     } else {
-      _pushText(_state, start, pos)
+      this.pushText(state, start, pos)
     }
 
     return $_T.TEXT
-  }
-
+  },
 
   /**
-   * Parser for comments.
-   * DOCTYPE & CDATA blocks are not recognized.
+   * Parses comments in long or short form
+   * (any DOCTYPE & CDATA blocks are parsed as comments).
    *
-   * @param   {object} _state - Parser state
-   * @param   {string} _data  - Buffer to parse
-   * @param   {number} start  - Position of the '<!' sequence
+   * @param   {object} state - Parser state
+   * @param   {string} data  - Buffer to parse
+   * @param   {number} start - Position of the '<!' sequence
    * @returns {number} New parser mode (always TEXT).
    */
-  function _parseComment(_state, _data, start) {
+  parseComment(state, data, start) {
     const pos = start + 2                   // skip '<!'
-    const str = _data.substr(pos, 2) === '--' ? '-->' : '>'
+    const str = data.substr(pos, 2) === '--' ? '-->' : '>'
+    const end = data.indexOf(str, pos)
 
-    let end = _data.indexOf(str, pos)
     if (end < 0) {
-      _error(_state, 'Unclosed comment')
+      this.error(state, data, 'Unclosed comment', start)
     }
-    end += str.length
 
-    _pushComment(_state, start, end)
+    this.pushComment(state, start, end + str.length)
 
     return $_T.TEXT
-  }
-
+  },
 
   /**
    * The more complex parsing is for attributes.
    *
-   * @param   {object} _state - Parser state
-   * @param   {string} _data  - Buffer to parse
+   * @param   {object} state - Parser state
+   * @param   {string} data  - Buffer to parse
    * @returns {number} New parser mode.
    */
-  function _parseAttr(_state, _data) {
+  parseAttr(state, data) {
     const _C = /\S/g                        // matches the first non-space char
 
-    _C.lastIndex = _state.pos
-    let match = _C.exec(_data)
+    _C.lastIndex = state.pos
+    let match = _C.exec(data)
     if (!match) {
-      _error(_state, 'Unfinished tag')
+      state.pos = data.length
+      return $_T.ATTR   // will generate error
     }
 
-    const tag = _state.last               // the last tag in the output
+    const tag = state.last                 // the last tag in the output
     const ch  = match[0]
 
-    if (ch === '>') {                     // tag ends?
-      _state.pos = tag.end = _C.lastIndex // done w/attr, end is after '>' now
+    if (ch === '>') {                       // tag ends?
+      state.pos = tag.end = _C.lastIndex   // done w/attr, end is after '>' now
       return $_T.TEXT
     }
 
-    if (ch === '/') {                     // self closing tag?
-      match = _C.exec(_data)
+    if (ch === '/') {                       // self closing tag?
+      match = _C.exec(data)
       if (!match) {
-        _error(_state, 'Unfinished tag')
+        state.pos = data.length
+        return $_T.ATTR   // will generate error
       }
 
       if (match[0] === '>') {
         tag.selfclose = true
-        _state.pos = tag.end = _C.lastIndex
+        state.pos = tag.end = _C.lastIndex
         return $_T.TEXT
       }
 
-      // Skip this char. This mimic the behavior of Chrome,
-      // skipping the slash even if a closing '>' does not follows this.
-      _state.pos = match.index
+      // Skip this char. This mimic the behavior of Chrome that
+      // skips the slash even if a closing '>' does not follows this.
+      state.pos = match.index
       return $_T.ATTR
     }
 
-    // R_ATTR_NAME_VAL = /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g
-    const start = match.index             // first non-whitespace
-    R_ATTR_NAME_VAL.lastIndex = start
-    match       = R_ATTR_NAME_VAL.exec(_data)
-    const end   = R_ATTR_NAME_VAL.lastIndex
-    const value = match[2] || ''          // first letter of value or nothing
+    const start = match.index               // first non-whitespace
+    const re    = this.ATTR_START
+    re.lastIndex = start
+    match       = re.exec(data)
+    const end   = re.lastIndex
+    const value = match[2] || ''            // first letter of value or nothing
 
     const attr  = { name: match[1].toLowerCase(), value, start, end }
 
     if (value) {
-      _parseValue(_state, _data, attr, value, end)
+      this.parseValue(state, data, attr, value, end)
     }
-    _pushAttr(_state, attr, match.expr)
+
+    this.pushAttr(state, attr, match.expr)
 
     return $_T.ATTR
-  }
-
+  },
 
   /**
-   * Parse value for expressions
+   * Parse value for expressions.
    *
-   * @param   {object} _state - Parser state
-   * @param   {string} _data  - Buffer to parse
-   * @param   {object} attr   - Attribute as {name, value, start, end}
-   * @param   {string} quote  - First char of the attribute value
-   * @param   {number} start  - Position of the char following the `quote`
+   * @param   {object} state - Parser state
+   * @param   {string} data  - Buffer to parse
+   * @param   {object} attr  - Attribute as {name, value, start, end}
+   * @param   {string} quote - First char of the attribute value
+   * @param   {number} start - Position of the char following the `quote`
    * @returns {object} The attribute
    */
-  function _parseValue(_state, _data, attr, quote, start) {
+  parseValue(state, data, attr, quote, start) {
 
     // Usually, the value's first char (`quote`) is a quote. If not, this is
     // an unquoted value and we need adjust the start position.
     if (quote !== '"' && quote !== "'") {
-      quote = ''                            // first char of the value is not a quote
+      quote = ''                            // first char of value is not a quote
       start--                               // move the start to this char
     }
 
     // Dynamically, make a regexp that matches the closing quote (ending char
     // for unquoted values) or an opening brace of an expression.
-    const brace = _state.options.brackets[0]
-    const re    = RegExp(`${quote || '[>/\\s]'}|${_escape(brace)}`, 'g')
+    const brace = state.options.brackets[0]
+    const re    = RegExp(`${quote || '[>/\\s]'}|${this._escape(brace)}`, 'g')
     const pos   = start
     const expr  = []
     let mm, end
 
     while (1) {             //eslint-disable-line no-constant-condition
       re.lastIndex = start
-      mm = re.exec(_data)
+      mm = re.exec(data)
       if (!mm) {
-        _state.pos = attr.start
-        _error(_state, 'Unfinished attribute')
+        this.error(state, data, 'Unfinished attribute', attr.start)
       }
       if (mm[0] !== brace) {
         break                               // the attribute ends
       }
       start = mm.index                      // may have an expression
-      end = _parseExpr(_data, start)
+      end = this.parseExpr(data, start)
       if (~end) {
         expr.push({ start, end })
         start = end
@@ -381,7 +419,7 @@ export default function htmlParser(options) {
     }
 
     end = mm.index
-    attr.value = _data.slice(pos, end)
+    attr.value = data.slice(pos, end)
     attr.end = quote ? end + 1 : end
 
     if (expr.length) {
@@ -389,120 +427,89 @@ export default function htmlParser(options) {
     }
 
     return attr
-  }
-
+  },
 
   /**
    * Parses regular text and script/style blocks ...scryle for short :-)
    * (the content of script and style is text as well)
    *
-   * @param   {object} _state - Parser state
-   * @param   {string} _data  - Buffer to parse
-   * @returns {number} New parser mode
+   * @param   {object} state - Parser state
+   * @param   {string} data  - Buffer to parse
+   * @returns {number} New parser mode.
    */
-  function _parseText(_state, _data) {
-    const pos = _state.pos                  // pos of the char following '<'
+  parseText(state, data) {
+    const pos = state.pos                  // pos of the char following '<'
 
-    if (_state.scryle) {
-      const name = _state.scryle
-      const re   = name === 'script' ? R_SCRIPT_CLOSE : R_STYLE_CLOSE
+    if (state.scryle) {
+      const name = state.scryle
+      const re   = name === 'script' ? this.SCRIPT_CLOSE : this.STYLE_CLOSE
 
       re.lastIndex = pos
-      const match = re.exec(_data)
+      const match = re.exec(data)
       if (!match) {
-        _error(_state, `Unclosed tag "${name}"`)
+        this.error(state, data, `Unclosed "${name}" block`, pos - 1)
       }
       const start = match.index
       const end   = re.lastIndex
-      _state.scryle = ''                    // no error, so reset the flag now
+      state.scryle = ''                    // no error, so reset the flag now
 
       // write the tag content, if any
       if (start > pos) {
-        _pushText(_state, pos, start)
+        this.pushText(state, pos, start)
       }
       // now the closing tag, either </script> or </style>
-      _pushTag(_state, $_T.TAG, `/${name}`, start, end)
+      this.pushTag(state, $_T.TAG, `/${name}`, start, end)
 
-    } else if (_data[pos] === '<') {
-      _state.pos++
+    } else if (data[pos] === '<') {
+      state.pos++
       return $_T.TAG
 
     } else {
-      const pos1 = _data.indexOf('<', pos)
-      const pos2 = _data.indexOf(_state.options.brackets[0], pos)
+      const pos1 = data.indexOf('<', pos)
+      const pos2 = data.indexOf(state.options.brackets[0], pos)
 
       if (~pos2 && (pos1 < 0 || pos1 > pos2)) {
-        return _pushTextExpr(_state, _data, pos2)
+        return this.pushTextExpr(state, data, pos2)
       }
 
       if (~pos1) {
-        _pushText(_state, pos, pos1)
-        _state.pos++
+        this.pushText(state, pos, pos1)
+        state.pos++
         return $_T.TAG
       }
 
-      _pushText(_state, pos, _data.length)  // all remaining is text
+      this.pushText(state, pos, data.length)  // all remaining is text
     }
 
     return $_T.TEXT
-  }
+  },
 
-
-  function _pushTextExpr(_state, _data, start) {
-    const brace = _state.options.brackets[0]
+  pushTextExpr(state, data, start) {
+    const brace = state.options.brackets[0]
     const expr  = []
-    const re    = new RegExp(`<|${_escape(brace)}`, 'g')
+    const re    = new RegExp(`<|${this._escape(brace)}`, 'g')
 
     let end, mm
 
     do {
-      end = _parseExpr(_data, start)
+      end = this.parseExpr(data, start)
       if (~end) {
         expr.push({ start, end })
       } else {
         end = start + brace.length
       }
       re.lastIndex = end
-      mm = re.exec(_data)
-      start = mm ? mm.index : _data.length
+      mm = re.exec(data)
+      start = mm ? mm.index : data.length
     } while (mm && mm[0] !== '<')
 
-    _pushText(_state, _state.pos, start, expr)
+    this.pushText(state, state.pos, start, expr)
 
     return $_T.TEXT
   }
 
+})
 
-  /*
-    Updates the global position
-  */
-  /*
-  function _getLoc (_state, _data, start) {
-    const loc = _state.loc
-
-    let col = loc.col
-    let pos = loc.pos
-    if (pos < start) {
-      const re = /\r\n?|\n/g    // eols of any type (unix/mac/win)
-
-      _data = _data.slice(pos, start)
-
-      let lines = pos = 0
-
-      while (re.exec(_data)) {
-        pos = re.lastIndex
-        lines++
-      }
-
-      if (lines) {
-        loc.line += lines
-        col = 0
-      }
-      loc.col = col += _data.length - pos
-      loc.pos = start
-    }
-
-    return { line: loc.line, col }
-  }
-  */
+export default function htmlParser(options) {
+  return new HtmlParser(options)
 }

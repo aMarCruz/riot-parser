@@ -1,6 +1,6 @@
 /**
  * Mini-parser for expressions.
- * This main pourpose for this module is find the end of an expression.
+ * This main pourpose of this module is to find the end of an expression.
  * Does not works with comments, but supports ES6 template strings.
  * @module parseExpr
  */
@@ -26,9 +26,9 @@ const S_SQ_STR = S_DQ_STR.replace(/"/g, "'")
  * @class ExprParser
  */
 function ExprParser(options) {
-  this._bp   = options.brackets
+  this._bp   = options.brackets             // brackets pair
   this._re   = RegExp(`${S_DQ_STR}|${S_SQ_STR}|${this._reChar(this._bp[1])}`, 'g')
-  this.parse = ExprParser.prototype.parse.bind(this)
+  this.parse = this.parse.bind(this)
 }
 
 
@@ -37,8 +37,7 @@ ExprParser.prototype = {
   /**
    * Parses the code string searching the end of the expression.
    *
-   * It skips quoted strings, regexes, ES6 template literals, and braces as the
-   * ones in the brackets pair.
+   * It skips braces, quoted strings, regexes, and ES6 template literals.
    *
    * @param   {string} code  - Buffer to parse
    * @param   {number} start - Position of the opening brace
@@ -49,9 +48,9 @@ ExprParser.prototype = {
     const re = this._re
 
     const closingStr = bp[1]
-    const stack = []                        // push in 1 if we have an ES6 TL
+    const stack = []                        // braces (or 1, for ES6 TL)
 
-    let found = -1                          // `found` can't be -1 on success
+    let found = -1                          // `found` can not be -1 on success
     let match, ch, c2
 
     re.lastIndex = start + bp[0].length     // skip first brace
@@ -77,18 +76,18 @@ ExprParser.prototype = {
         case '}':
           c2 = stack.pop()
           ch = ch === ')' ? '(' : ch === ']' ? '[' : '{'
-          if (c2 !== ch) throw new Error(`Expected "${ch}" but got "${c2}"`)
+          if (c2 !== ch) throw new Error(`Expected '${ch}' but got '${c2}'`)
           break
 
         case '`':
-          re.lastIndex = this._skipES6str(code, end, stack)
+          re.lastIndex = this.skipES6str(code, end, stack)
           break
 
         case '/':
-          re.lastIndex = this._parseRegex(code, end)
+          re.lastIndex = this.skipRegex(code, end)
           break
 
-        default:  // quotes, just skip
+        default:  // quoted string, just skip
           break
       }
     }
@@ -99,7 +98,7 @@ ExprParser.prototype = {
   /*
     Here we extract the regexes
   */
-  _parseRegex: skipRegex,
+  skipRegex,
 
   /**
    * Simple ES6 Template Literal parser
@@ -109,7 +108,14 @@ ExprParser.prototype = {
    * @param   {number} stack - To save nested ES6 TL count
    * @returns {number}         The end of the string (-1 if not found)
    */
-  _skipES6str(code, start, stack) {
+  skipES6str(code, start, stack) {
+
+    // waitting end of string?
+    if (stack.length && stack[stack.length - 1] === 1) {
+      stack.pop()
+      return start
+    }
+
     // we are in the char following the back-tick (`),
     // find the next unescaped back-tick or the sequence "${"
     const re = /[`$\\]/g
@@ -123,7 +129,7 @@ ExprParser.prototype = {
         return end
       }
       if (c === '$' && code[end] === '{') {
-        stack.push(1)
+        stack.push(1, '{')
         return end + 1
       }
       // else this is a scape char

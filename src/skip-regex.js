@@ -21,15 +21,14 @@ const beforeReWords = [
   'yield'
 ]
 
-// matches characters for the keyword list
-const R_KW = /[$\w]/
-const R_WS = /\s/
-
-// the string to test does not have line-endings
+// The string to test can't include line-endings
 const R_RE = /^\/(?=[^*>/])[^[/\\]*(?:\\.|(?:\[(?:\\.|[^\]\\]*)*\])[^[\\/]*)*?\/(?=[gimuy]+|[^/\*]|$)/
 
-function isInList(list, v) {
-  return !!~list.indexOf(v)
+// Searches the position of the previous non-blank character inside `code`,
+// starting with `pos - 1`.
+function prev(code, pos) {
+  while (--pos >= 0 && /\s/.test(code[pos]));
+  return pos
 }
 
 /**
@@ -41,50 +40,48 @@ function isInList(list, v) {
  */
 export default function skipRegex(code, start) {
 
-  const prev = function (n) {
-    while (--n >= 0 && R_WS.test(code[n]));
-    return n
-  }
-
-  const R_ANY = /.*/g
-  R_ANY.lastIndex = start - 1
-  const match = R_ANY.exec(code)[0].match(R_RE)
+  // `exec()` will extract from the slash to the end of line and the
+  // chained `match()` will match the possible regex.
+  const re = /.*/g
+  re.lastIndex = start - 1
+  const match = re.exec(code)[0].match(R_RE)
 
   if (match) {
-    const next = match.index + match[0].length
+    const next = start + match[0].length
 
-    let pos = prev(start)
-    let c
+    let pos = prev(code, start)
+    const c = code[pos]
 
     // start of buffer or safe prefix?
-    if (pos < 0 || isInList(beforeReChars, c = code[pos])) {
+    if (pos < 0 || ~beforeReChars.indexOf(c)) {
       return next
     }
-    // from here, `pos` is >= 0 and `c` is code[pos]
 
+    // from here, `pos` is >= 0 and `c` is code[pos]
     if (c === '.') {
       // can be `...` or something like 5./2
       if (code[pos - 1] === '.') {
-        return next
+        start = next
       }
 
     } else if (c === '+' || c === '-') {
-      // '++' and '--' cannot preceed a regex, except rare
-      // cases like `x = ++/\s/.exec(s).lastIndex`
+      // exception here is '++' and '--' that cannot preceed a regex, except
+      // in rare cases like `x = ++/\s/.exec(s).lastIndex`
       if (code[--pos] !== c ||
-          (pos = prev(pos)) < 0 ||
-          isInList(beforeReChars, code[pos])) {
-        return next
+          (pos = prev(code, pos)) < 0 || ~beforeReChars.indexOf(code[pos])) {
+        start = next
       }
 
     } else if (/[a-z]/.test(c)) {
       // keyword?
-      const end = pos
-      while (--pos >= 0) {
-        if (!R_KW.test(code[pos])) break
-      }
-      if (isInList(beforeReWords, code.slice(pos + 1, end + 1))) {
-        return next
+      ++pos
+      for (let i = 0; i < beforeReWords.length; i++) {
+        const kw = beforeReWords[i]
+        const nn = pos - kw.length
+        if (nn >= 0 && code.slice(nn, pos) === kw && !/[$\w]/.test(code[nn - 1])) {
+          start = next
+          break
+        }
       }
     }
   }

@@ -1,5 +1,6 @@
 
-const _T = require('./types')
+const fn = require('../')
+const _T = fn().nodeTypes
 
 module.exports = {
 
@@ -430,21 +431,21 @@ module.exports = {
     expected: [{ type: _T.COMMENT, start: 0, end: 23 }]
   },
 
-  'html5 doctype (lowercase)': {
+  'html5 doctype deleted as comment': {
     data: '<!doctype html>\n<html></html>',
     expected: [
-      { type: _T.DOCTYPE, start: 0, end: 15 },
       { type: _T.TEXT, start: 15, end: 16 },
       { type: _T.TAG, name: 'html', start: 16, end: 22 },
       { type: _T.TAG, name: '/html', start: 22, end: 29 }
     ]
   },
 
-  'transitional doctype': {
+  'transitional doctype included as comment': {
+    options: { comments: true },
     data: '\n<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"><html></html>',
     expected: [
       { type: _T.TEXT, start: 0, end: 1 },
-      { type: _T.DOCTYPE, start: 1, end: 103 },
+      { type: _T.COMMENT, start: 1, end: 103 },
       { type: _T.TAG, name: 'html', start: 103, end: 109 },
       { type: _T.TAG, name: '/html', start: 109, end: 116 }
     ]
@@ -480,64 +481,64 @@ module.exports = {
 
   'unfinished simple tag #1': {
     data: '<div',
-    throws: /unexpected/
+    throws: /Unexpected/i
   },
 
   'unfinished simple tag #2': {
     data: '<div ',
-    throws: /unexpected/
+    throws: /Unexpected/i
   },
 
   'unfinished complex tag #1': {
     data: '<div foo="bar"',
-    throws: /unexpected/
+    throws: /Unexpected/i
   },
 
   'unfinished complex tag #2': {
     data: '<div  foo="bar" ',
-    throws: /unexpected/
+    throws: /Unexpected/i
   },
 
   'unfinished comment #1': {
     data: '<!-- comment text',
-    throws: /unclosed comment/
+    throws: /unclosed comment/i
   },
 
   'unfinished comment #2': {
     data: '<!-- comment text --',
-    throws: /unclosed comment/
+    throws: /unclosed comment/i
   },
 
   'unfinished comment #3': {
     data: '<div><!-- comment text </div>',
-    throws: /unclosed comment/
+    throws: /unclosed comment/i
   },
 
   'unfinished comment #4 (short notation)': {
     data: '<! comment text ',
-    throws: /unclosed comment/
+    throws: /unclosed comment/i
   },
 
   'unfinished unhidden CDATA becomes an unclosed comment': {
     data: '<![CDATA[ content',
-    throws: /unclosed comment/
+    throws: /unclosed comment/i
   },
 
   // Chrome discard the whole tag
   'must throw error on unfinished attributes': {
     data: '<div foo="bar',
-    throws: /unfinished attribute/
+    throws: /unfinished attribute/i
   },
 
   // Chrome discard the whole tag
   'must throw error on unfinished attributes #2': {
     data: '<div foo=" </div>',
-    throws: /unfinished attribute/
+    throws: /unfinished attribute/i
   },
 
   'must throw error on unfinished attributes #3': {
     data: '<div foo="bar',
-    throws: /unfinished attribute/
+    throws: /unfinished attribute/i
   },
 
   'whitespace after the tag name is ignored #1': {
@@ -684,17 +685,25 @@ module.exports = {
     ]
   },
 
+  'comments are ignored by default': {
+    data: '<!--\ncomment text\n-->',
+    expected: []
+  },
+
   'must keep multiline comment': {
+    options: { comments: true },
     data: '<!--\ncomment text\n-->',
     expected: [{ type: _T.COMMENT, start: 0, end: 21 }]
   },
 
   'must keep multiline comment with nested comment (start)': {
+    options: { comments: true },
     data: '<!--\ncomment text\n<!-- -->',
     expected: [{ type: _T.COMMENT, start: 0, end: 26 }]
   },
 
   'must keep comment with nested comment (close)': {
+    options: { comments: true },
     data: '<!-- comment text <!--> -->',
     expected: [
       { type: _T.COMMENT, start: 0, end: 23 },
@@ -703,6 +712,7 @@ module.exports = {
   },
 
   'must keep comment with only dashes': {
+    options: { comments: true },
     data: '<!------->\n',
     expected: [
       { type: _T.COMMENT, start: 0, end: 10 },
@@ -720,11 +730,13 @@ module.exports = {
   },
 
   'comment short notation in one line': {
+    options: { comments: true },
     data: '<! foo >',
     expected: [{ type: _T.COMMENT, start: 0, end: 8 }]
   },
 
   'comment short notation with 2 dashes': {
+    options: { comments: true },
     data: '\n<!-->',
     expected: [
       { type: _T.TEXT, start: 0, end: 1 },
@@ -733,6 +745,7 @@ module.exports = {
   },
 
   'comment short notation multiline': {
+    options: { comments: true },
     data: '<!\n  foo\n>\n',
     expected: [
       { type: _T.COMMENT, start: 0, end: 10 },
@@ -741,18 +754,31 @@ module.exports = {
   },
 
   'comment short notation starting with "-"': {
+    options: { comments: true },
     data: '<!-foo >',
     expected: [{ type: _T.COMMENT, start: 0, end: 8 }]
   },
 
   'comment short notation ending with "--"': {
+    options: { comments: true },
     data: '<!foo -->',
     expected: [{ type: _T.COMMENT, start: 0, end: 9 }]
   },
 
   'comment short notation with dashes inside': {
+    options: { comments: true },
     data: '<! -- -->',
     expected: [{ type: _T.COMMENT, start: 0, end: 9 }]
+  },
+
+  'ignored comment #1': {
+    data: '<! -- <p -->',
+    expected: []
+  },
+
+  'ignored comment #2': {
+    data: '<!----><p/>',
+    expected: [{ type: _T.TAG,  name: 'p', start: 7, end: 11, selfclose: true }]
   },
 
   'tags in script tag code': {
@@ -883,7 +909,6 @@ module.exports = {
     expected: [
       { type: _T.TAG, name: 'div' },
       { type: _T.TEXT, start: 5, end: 10 },
-      { type: _T.COMMENT, start: 10, end: 25 },
       { type: _T.TAG, name: '/div', start: 25, end: 31 }
     ]
   },

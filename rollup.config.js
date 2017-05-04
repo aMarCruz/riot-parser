@@ -13,9 +13,9 @@ export default {
     buble(),
     cleanup()
   ],
-  external: external /*,
+  external: external,
   targets: [
-    { dest: 'dist/htmlparser.js', format: 'cjs' },
-    { dest: 'dist/htmlparser.es.js', format: 'es' }
-  ]*/
+    { dest: 'dist/riot-parser.js', format: 'cjs' },
+    { dest: 'dist/riot-parser.es.js', format: 'es' }
+  ]
 }
