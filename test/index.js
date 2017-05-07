@@ -7,12 +7,12 @@ const fs = require('fs')
 
 process.chdir(__dirname)
 
-describe.only('The Parser', function () {
+describe('The Parser', function () {
 
   const theTests = require('./tparser')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 0//'tag with invalid attributes names'
+  const _TDEBUG = 0//'attributes with empty value (w/ equal sign) #3'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]
@@ -45,12 +45,12 @@ describe.only('The Parser', function () {
 })
 
 
-describe('Expressions', function () {
+describe.only('Expressions', function () {
 
   const theTests = require('./texpr')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 0 // 'Simple string with embeded brackets'
+  const _TDEBUG = 'ES6 with double quotes inside #2'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]

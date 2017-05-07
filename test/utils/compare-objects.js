@@ -1,6 +1,7 @@
 /*
   http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
 */
+'use strict'
 
 function isEmpty(v) {
   if (!v) return true
@@ -10,7 +11,6 @@ function isEmpty(v) {
 }
 
 function compareObjects(a, b) {
-  'use strict'
 
   var p
 

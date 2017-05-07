@@ -51,7 +51,7 @@ ExprExtractor.prototype = {
     const offset = start + bp[0].length
     const stack = []                        // braces (or 1, for ES6 TL)
 
-    let match, ch, c2
+    let match, ch
 
     re.lastIndex = offset                   // skip first brace
 
@@ -61,25 +61,24 @@ ExprExtractor.prototype = {
 
       if (str === closingStr && !stack.length) {
         return {
-          text: code.slice(offset, match.index).trim(),
+          text: code.slice(offset, match.index),
           start,
           end
         }
       }
 
-      switch (ch = str[0]) {
+      switch (str) {
         case '[':
         case '(':
         case '{':
-          stack.push(ch)
+          stack.push(str === '[' ? ']' : str === '(' ? ')' : '}')
           break
 
         case ')':
         case ']':
         case '}':
-          c2 = stack.pop()
-          ch = ch === ')' ? '(' : ch === ']' ? '[' : '{'
-          if (c2 !== ch) throw new Error(`Expected '${ch}' but got '${c2}'`)
+          ch = stack.pop()
+          if (ch !== str) throw new Error(`Expected '${ch}' but got '${str}'`)
           break
 
         case '`':
@@ -91,6 +90,10 @@ ExprExtractor.prototype = {
           break
 
         default:  // quoted string, just skip
+          // except inside ES6TL (like the second quote in `"${x}"`)
+          if (stack[stack.length - 1] === 1) {
+            re.lastIndex = match.index + 1  // only skip the first quote
+          }
           break
       }
     }
@@ -134,7 +137,7 @@ ExprExtractor.prototype = {
         return end
       }
       if (c === '$' && code[end] === '{') {
-        stack.push(1, '{')
+        stack.push(1, '}')
         return end + 1
       }
       // else this is a scape char
@@ -147,10 +150,10 @@ ExprExtractor.prototype = {
     let s
     if (c.length === 1) {
       if (/[\{}[\]()]/.test(c)) c = ''
-      else if (c === '-' || c === '^') c = `\\${c}`
-      s = '[' + c + '`/\\{}[\\]()]'
+      else if (c === '-') c = `\\${c}`
+      s = '[`' + c + '/\\{}[\\]()]'
     } else {
-      s = s.replace(/(?=[[()\-*+?.$|])/g, '\\') + '|[`/\\{}[\\]()]'
+      s = s.replace(/(?=[[^()\-*+?.$|])/g, '\\') + '|[`/\\{}[\\]()]'
     }
     return s
   }

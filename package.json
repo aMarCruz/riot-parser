@@ -10,7 +10,7 @@
     "node": ">=4.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "mocha ./test/index.js",
     "lint": "eslint src test/index.js",
     "echo": "node ./test/echo.js",
     "pretest": "rollup -m -c",
