@@ -12,6 +12,7 @@
   "scripts": {
     "test": "mocha",
     "lint": "eslint src test/index.js",
+    "echo": "node ./test/echo.js",
     "pretest": "rollup -m -c",
     "build": "rm -rf dist/* && rollup -m -c",
     "prepublish": "npm run lint && rm -rf dist/* && npm test"

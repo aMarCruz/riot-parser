@@ -23,16 +23,16 @@ const S_SQ_STR = S_DQ_STR.replace(/"/g, "'")
 /**
  * Parses the code string searching the end of the expression.
  * @param {object} options - Parser parameters
- * @class ExprParser
+ * @class ExprExtractor
  */
-function ExprParser(options) {
+function ExprExtractor(options) {
   this._bp   = options.brackets             // brackets pair
   this._re   = RegExp(`${S_DQ_STR}|${S_SQ_STR}|${this._reChar(this._bp[1])}`, 'g')
   this.parse = this.parse.bind(this)
 }
 
 
-ExprParser.prototype = {
+ExprExtractor.prototype = {
 
   /**
    * Parses the code string searching the end of the expression.
@@ -48,20 +48,23 @@ ExprParser.prototype = {
     const re = this._re
 
     const closingStr = bp[1]
+    const offset = start + bp[0].length
     const stack = []                        // braces (or 1, for ES6 TL)
 
-    let found = -1                          // `found` can not be -1 on success
     let match, ch, c2
 
-    re.lastIndex = start + bp[0].length     // skip first brace
+    re.lastIndex = offset                   // skip first brace
 
     while ((match = re.exec(code))) {
       const end = re.lastIndex
       const str = match[0]
 
       if (str === closingStr && !stack.length) {
-        found = end
-        break
+        return {
+          text: code.slice(offset, match.index).trim(),
+          start,
+          end
+        }
       }
 
       switch (ch = str[0]) {
@@ -92,7 +95,7 @@ ExprParser.prototype = {
       }
     }
 
-    return found
+    return null
   },
 
   /*
@@ -101,7 +104,9 @@ ExprParser.prototype = {
   skipRegex,
 
   /**
-   * Simple ES6 Template Literal parser
+   * Simple ES6 Template Literal parser, it searches the next back-quote that
+   * signals the end of the ES6TL or the `${` sequence that starts a JS expression,
+   * skipping any escaped character.
    *
    * @param   {string} code  - Whole code
    * @param   {number} start - The start position of the template
@@ -110,7 +115,7 @@ ExprParser.prototype = {
    */
   skipES6str(code, start, stack) {
 
-    // waitting end of string?
+    // waiting the ES6TL end?
     if (stack.length && stack[stack.length - 1] === 1) {
       stack.pop()
       return start
@@ -141,16 +146,16 @@ ExprParser.prototype = {
   _reChar(c) {
     let s
     if (c.length === 1) {
-      s = /[\{}[\]()]/.test(c) ? '' : c === '-' ? '\\-' : c
-      s = '[' + s + '`/\\{}[\\]()]'
+      if (/[\{}[\]()]/.test(c)) c = ''
+      else if (c === '-' || c === '^') c = `\\${c}`
+      s = '[' + c + '`/\\{}[\\]()]'
     } else {
-      s = c[0] === '^' ? `\\${c}` : c
       s = s.replace(/(?=[[()\-*+?.$|])/g, '\\') + '|[`/\\{}[\\]()]'
     }
     return s
   }
 }
 
-export default function exprParser(options) {
-  return new ExprParser(options)
+export default function extractExpr(options) {
+  return new ExprExtractor(options).parse
 }

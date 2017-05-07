@@ -40,22 +40,22 @@ module.exports = {
   },
 
   'attribute with single quotes': {
-    data: '<div a=\'1\'>',
+    data: "<div a='1'>",
     expected: [
       {
         type: _T.TAG, name: 'div', start: 0, end: 11, attrs: [
-          { name: 'a', value: '1', start: 5, end: 10 }
+          { name: 'a', value: '1', start: 5, end: 10, valueStart: 8 }
         ]
       },
     ]
   },
 
   'attribute with double quotes': {
-    data: '<div a="1">',
+    data: '<div a="\'">',
     expected: [
       {
         type: _T.TAG, name: 'div', start: 0, end: 11, attrs: [
-          { name: 'a', value: '1', start: 5, end: 10 }
+          { name: 'a', value: "'", start: 5, end: 10, valueStart: 8 }
         ]
       }
     ]
@@ -66,7 +66,7 @@ module.exports = {
     expected: [
       {
         type: _T.TAG, name: 'div', start: 0, end: 10, attrs: [
-          { name: 'a', value: '1', start: 6, end: 9 }
+          { name: 'a', value: '1', start: 6, end: 9, valueStart: 8 }
         ]
       }
     ]
@@ -92,23 +92,23 @@ module.exports = {
   },
 
   'tag with multiple attributes': {
-    data: '<div a="1" b="2">',
+    data: '<div a="1" b=2>',
     expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 17, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10 },
-        { name: 'b', value: '2', start: 11, end: 16 }
+      { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
+        { name: 'a', value: '1', start: 5, end: 10, valueStart: 8 },
+        { name: 'b', value: '2', start: 11, end: 14, valueStart: 13 }
       ] },
     ]
   },
 
   'tag with multiple attributes, trailing text': {
-    data: '<div a="1" b="2">xxx',
+    data: '<div a=1 b="2">xxx',
     expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 17, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10 },
-        { name: 'b', value: '2', start: 11, end: 16 }
+      { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
+        { name: 'a', value: '1', start: 5, end: 8, valueStart: 7 },
+        { name: 'b', value: '2', start: 9, end: 14, valueStart: 12 }
       ] },
-      { type: _T.TEXT, start: 17, end: 20 }
+      { type: _T.TEXT, start: 15, end: 18 }
     ]
   },
 
@@ -116,31 +116,31 @@ module.exports = {
     data: '<div a=1 b=\'2\' c="3">',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 8 },
-        { name: 'b', value: '2', start: 9, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
+        { name: 'a', value: '1', start: 5, end: 8, valueStart: 7 },
+        { name: 'b', value: '2', start: 9, end: 14, valueStart: 12 },
+        { name: 'c', value: '3', start: 15, end: 20, valueStart: 18 }
       ] }
     ]
   },
 
   'tag with mixed attributes #2': {
-    data: '<div a=1 b="2" c=\'3\'>',
+    data: '<div a=1 b="2" c=\'3\' />',
     expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 8 },
-        { name: 'b', value: '2', start: 9, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
+      { type: _T.TAG, name: 'div', start: 0, end: 23, selfclose: true, attrs: [
+        { name: 'a', value: '1', start: 5, end: 8, valueStart: 7 },
+        { name: 'b', value: '2', start: 9, end: 14, valueStart: 12 },
+        { name: 'c', value: '3', start: 15, end: 20, valueStart: 18 }
       ] }
     ]
   },
 
   'tag with mixed attributes #3': {
-    data: '<div a=\'1\' b=2 c="3">',
+    data: '<div a=\'1\' b=2 data-c = "3" >',
     expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10 },
-        { name: 'b', value: '2', start: 11, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
+      { type: _T.TAG, name: 'div', start: 0, end: 29, attrs: [
+        { name: 'a', value: '1', start: 5, end: 10, valueStart: 8 },
+        { name: 'b', value: '2', start: 11, end: 14, valueStart: 13 },
+        { name: 'data-c', value: '3', start: 15, end: 27, valueStart: 25 }
       ] }
     ]
   },
@@ -149,20 +149,9 @@ module.exports = {
     data: '<div a=\'1\' b="2" c=3>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10  },
-        { name: 'b', value: '2', start: 11, end: 16 },
-        { name: 'c', value: '3', start: 17, end: 20 }
-      ] }
-    ]
-  },
-
-  'tag with mixed attributes #5': {
-    data: '<div a="1" b=2 c=\'3\'>',
-    expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10 },
-        { name: 'b', value: '2', start: 11, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
+        { name: 'a', value: '1', start: 5, end: 10, valueStart: 8 },
+        { name: 'b', value: '2', start: 11, end: 16, valueStart: 14 },
+        { name: 'c', value: '3', start: 17, end: 20, valueStart: 19 }
       ] }
     ]
   },
@@ -171,9 +160,21 @@ module.exports = {
     data: '<div a="1" b=\'2\' c="3">',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 23, attrs: [
-        { name: 'a', value: '1', start: 5, end: 10 },
-        { name: 'b', value: '2', start: 11, end: 16 },
-        { name: 'c', value: '3', start: 17, end: 22 }
+        { name: 'a', value: '1', start: 5, end: 10, valueStart: 8 },
+        { name: 'b', value: '2', start: 11, end: 16, valueStart: 14 },
+        { name: 'c', value: '3', start: 17, end: 22, valueStart: 20 }
+      ] }
+    ]
+  },
+
+  'tag with invalid attributes names': {
+    data: '<div ~a="" /b --c __d="" >',
+    expected: [
+      { type: _T.TAG, name: 'div', start: 0, end: 26, attrs: [
+        { name: '~a', value: '', start: 5, end: 10, valueStart: 9 },
+        { name: 'b', value: '', start: 12, end: 13 },
+        { name: '--c', value: '', start: 14, end: 17 },
+        { name: '__d', value: '', start: 18, end: 24, valueStart: 23 }
       ] }
     ]
   },
@@ -182,9 +183,9 @@ module.exports = {
     data: '<div a=1 b=\'2\' c="3">xxx',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 21, attrs: [
-        { name: 'a', value: '1', start: 5, end: 8 },
-        { name: 'b', value: '2', start: 9, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
+        { name: 'a', value: '1', start: 5, end: 8, valueStart: 7 },
+        { name: 'b', value: '2', start: 9, end: 14, valueStart: 12 },
+        { name: 'c', value: '3', start: 15, end: 20, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 21, end: 24 }
     ]
@@ -194,7 +195,7 @@ module.exports = {
     data: "<div id='\nxxx\nyyy\n'>",
     expected: [
       { type: _T.TAG,  name: 'div', attrs: [
-        { name: 'id', value: '\nxxx\nyyy\n', end: 19 }
+        { name: 'id', value: '\nxxx\nyyy\n', end: 19, valueStart: 9 }
       ] }
     ]
   },
@@ -203,7 +204,7 @@ module.exports = {
     data: '<div id="\nxxx\nyyy\n">',
     expected: [
       { type: _T.TAG,  name: 'div', attrs: [
-        { name: 'id', value: '\nxxx\nyyy\n', end: 19 }
+        { name: 'id', value: '\nxxx\nyyy\n', end: 19, valueStart: 9 }
       ] }
     ]
   },
@@ -256,7 +257,7 @@ module.exports = {
     data: '<div a=b/>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 10, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 8 }
+        { name: 'a', value: 'b', start: 5, end: 8, valueStart: 7 }
       ] }
     ]
   },
@@ -265,7 +266,7 @@ module.exports = {
     data: '<div a=b />',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 11, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 8 }
+        { name: 'a', value: 'b', start: 5, end: 8, valueStart: 7 }
       ] }
     ]
   },
@@ -274,7 +275,7 @@ module.exports = {
     data: '<div a="b"/>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 12, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 10 }
+        { name: 'a', value: 'b', start: 5, end: 10, valueStart: 8 }
       ] }
     ]
   },
@@ -283,7 +284,7 @@ module.exports = {
     data: '<div a=\'b\'\n/>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 13, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 10 }
+        { name: 'a', value: 'b', start: 5, end: 10, valueStart: 8 }
       ] }
     ]
   },
@@ -292,7 +293,7 @@ module.exports = {
     data: '<div a=b />xxx',
     expected: [
       { type: _T.TAG,  name: 'div', start: 0, end: 11, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 8 }
+        { name: 'a', value: 'b', start: 5, end: 8, valueStart: 7 }
       ] },
       { type: _T.TEXT, start: 11, end: 14 }
     ]
@@ -302,7 +303,7 @@ module.exports = {
     data: '<div a=b /></div>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 11, selfclose: true, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 8 }
+        { name: 'a', value: 'b', start: 5, end: 8, valueStart: 7 }
       ] },
       { type: _T.TAG, name: '/div', start: 11, end: 17 }
     ]
@@ -312,31 +313,19 @@ module.exports = {
     data: '<div a="1><span id="foo">xxx',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 25, attrs: [
-        { name: 'a', value: '1><span id=', start: 5, end: 20 },
+        { name: 'a', value: '1><span id=', start: 5, end: 20, valueStart: 8 },
         { name: 'foo"', value: '', start: 20, end: 24 }
       ] },
       { type: _T.TEXT, start: 25, end: 28 }
     ]
   },
-/*
-  'option `location` gives line/col info in the `loc` property': {
-    options: { location: true },
-    data: '<div a=b>\n</div>',
-    expected: [
-      { type: _T.TAG, name: 'div', start: 0, end: 9, loc: { line: 1, col: 0 }, attrs: [
-        { name: 'a', value: 'b', start: 5, end: 8 }
-      ] },
-      { type: _T.TEXT, start: 9, end: 10, loc: { line: 1, col: 9 } },
-      { type: _T.TAG, name: '/div', start: 10, end: 16, loc: { line: 2, col: 0 } }
-    ]
-  },*/
 
   'text before complex tag': {
     data: 'xxx<div yyy="123">',
     expected: [
       { type: _T.TEXT, start: 0, end: 3 },
       { type: _T.TAG, name: 'div', start: 3, end: 18, attrs: [
-        { name: 'yyy', value: '123', start: 8, end: 17 }
+        { name: 'yyy', value: '123', start: 8, end: 17, valueStart: 13 }
       ] }
     ]
   },
@@ -345,7 +334,7 @@ module.exports = {
     data: '<div yyy="123">xxx',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
-        { name: 'yyy', value: '123', start: 5, end: 14 }
+        { name: 'yyy', value: '123', start: 5, end: 14, valueStart: 10 }
       ] },
       { type: _T.TEXT, start: 15, end: 18 }
     ]
@@ -356,7 +345,7 @@ module.exports = {
     data: '<div yyy="123">xxx</div>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
-        { name: 'yyy', value: '123', start: 5, end: 14 }
+        { name: 'yyy', value: '123', start: 5, end: 14, valueStart: 10 }
       ] },
       { type: _T.TEXT, start: 15, end: 18 },
       { type: _T.TAG, name: '/div', start: 18, end: 24 }
@@ -377,10 +366,10 @@ module.exports = {
     data: '<div aaa="bbb"><span 123=\'456\'>xxx</span></div>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
-        { name: 'aaa', value: 'bbb', start: 5, end: 14 }
+        { name: 'aaa', value: 'bbb', start: 5, end: 14, valueStart: 10 }
       ] },
       { type: _T.TAG, name: 'span', start: 15, end: 31, attrs: [
-        { name: '123', value: '456', start: 21, end: 30 }
+        { name: '123', value: '456', start: 21, end: 30, valueStart: 26 }
       ] },
       { type: _T.TEXT, start: 31, end: 34 },
       { type: _T.TAG, name: '/span', start: 34, end: 41 },
@@ -388,7 +377,15 @@ module.exports = {
     ]
   },
 
-  'comment inside tag': {
+  'comment inside tag ignored by default': {
+    data: '<div><!-- comment text --></div>',
+    expected: [
+      { type: _T.TAG, name: 'div', start: 0, end: 5 },
+      { type: _T.TAG, name: '/div', start: 26, end: 32 }
+    ]
+  },
+
+  'comment inside tag preserved with `comments: true`': {
     options: { comments: true },
     data: '<div><!-- comment text --></div>',
     expected: [
@@ -408,7 +405,7 @@ module.exports = {
     ]
   },
 
-  'in html, unhidden CDATA is parsed as comment (<! >) so `>` breaks the tag': {
+  'unhidden CDATA is parsed as comment (<! >), other `>` breaks the tag': {
     options: { comments: true },
     data: '<![CDATA[ <div>\n  foo\n</div> ]]>',
     expected: [
@@ -451,29 +448,29 @@ module.exports = {
     ]
   },
 
-  'quotes in attribute #1': {
+  'quotes inside attribute value #1': {
     data: '<div xxx=\'a"b\'>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 15, attrs: [
-        { name: 'xxx', value: 'a"b', start: 5, end: 14 }
+        { name: 'xxx', value: 'a"b', start: 5, end: 14, valueStart: 10 }
       ] }
     ]
   },
 
-  'quotes in attribute #2': {
+  'quotes inside attribute value #2': {
     data: '<div xxx="a\'b"\n>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 16, attrs: [
-        { name: 'xxx', value: 'a\'b', start: 5, end: 14 }
+        { name: 'xxx', value: 'a\'b', start: 5, end: 14, valueStart: 10 }
       ] }
     ]
   },
 
-  'brackets in attribute': {
+  'brackets inside attribute value': {
     data: '<div xxx="</div>">\n',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 18, attrs: [
-        { name: 'xxx', value: '</div>', start: 5, end: 17 }
+        { name: 'xxx', value: '</div>', start: 5, end: 17, valueStart: 10 }
       ] },
       { type: _T.TEXT, start: 18, end: 19 }
     ]
@@ -571,7 +568,7 @@ module.exports = {
     data: '<div foo ="bar">',
     expected: [
       { type: _T.TAG, name: 'div', end: 16, attrs: [
-        { name: 'foo', value: 'bar', start: 5, end: 15 }
+        { name: 'foo', value: 'bar', start: 5, end: 15, valueStart: 11 }
       ] }
     ]
   },
@@ -579,7 +576,7 @@ module.exports = {
   'whitespace in attributes is ignored #2': {
     data: '<div foo= "bar">', expected: [
       { type: _T.TAG, name: 'div', end: 16, attrs: [
-        { name: 'foo', value: 'bar', start: 5, end: 15 }
+        { name: 'foo', value: 'bar', start: 5, end: 15, valueStart: 11 }
       ] }
     ]
   },
@@ -588,7 +585,7 @@ module.exports = {
     data: '<div\n foo = "bar">',
     expected: [
       { type: _T.TAG, name: 'div', end: 18, attrs: [
-        { name: 'foo', value: 'bar', start: 6, end: 17 }
+        { name: 'foo', value: 'bar', start: 6, end: 17, valueStart: 13 }
       ] }
     ]
   },
@@ -597,7 +594,7 @@ module.exports = {
     data: '<div foo =bar>',
     expected: [
       { type: _T.TAG, name: 'div', end: 14, attrs: [
-        { name: 'foo', value: 'bar', start: 5, end: 13 }
+        { name: 'foo', value: 'bar', start: 5, end: 13, valueStart: 10 }
       ] }
     ]
   },
@@ -606,7 +603,7 @@ module.exports = {
     data: '<div foo= bar>',
     expected: [
       { type: _T.TAG, name: 'div', end: 14, attrs: [
-        { name: 'foo', value: 'bar', start: 5, end: 13 }
+        { name: 'foo', value: 'bar', start: 5, end: 13, valueStart: 10 }
       ] }
     ]
   },
@@ -615,7 +612,7 @@ module.exports = {
     data: '<div foo = bar>',
     expected: [
       { type: _T.TAG, name: 'div', end: 15, attrs: [
-        { name: 'foo', value: 'bar', start: 5, end: 14 }
+        { name: 'foo', value: 'bar', start: 5, end: 14, valueStart: 11 }
       ] }
     ]
   },
@@ -633,7 +630,7 @@ module.exports = {
     data: '<div foo = "">',
     expected: [
       { type: _T.TAG, name: 'div', end: 14, attrs: [
-        { name: 'foo', value: '', start: 5, end: 13 }
+        { name: 'foo', value: '', start: 5, end: 13, valueStart: 12 }
       ] }
     ]
   },
@@ -647,21 +644,30 @@ module.exports = {
     ]
   },
 
+  'attributes with empty value (w/ equal sign) #2': {
+    data: '<div foo= />',
+    expected: [
+      { type: _T.TAG, name: 'div', start: 0, end: 12, selfclose: true, attrs: [
+        { name: 'foo', value: '', start: 5, end: 9 }
+      ] }
+    ]
+  },
+
   'mixed case tag names are lowercased': {
     data: '<diV>',
-    expected: [{ type: _T.TAG, name: 'div' }]
+    expected: [{ type: _T.TAG, name: 'div', start: 0, end: 5 }]
   },
 
   'upper case tag names are lowercased': {
     data: '<DIV>',
-    expected: [{ type: _T.TAG, name: 'div' }]
+    expected: [{ type: _T.TAG, name: 'div', start: 0, end: 5 }]
   },
 
   'mixed case attribute are lowercased': {
     data: '<div xXx="Yyy">',
     expected: [
       { type: _T.TAG, name: 'div', attrs: [
-        { name: 'xxx', value: 'Yyy', start: 5, end: 14 }
+        { name: 'xxx', value: 'Yyy', start: 5, end: 14, valueStart: 10 }
       ] }
     ]
   },
@@ -670,7 +676,7 @@ module.exports = {
     data: '<div XXX="Yyy">',
     expected: [
       { type: _T.TAG, name: 'div', attrs: [
-        { name: 'xxx', value: 'Yyy', start: 5, end: 14 }
+        { name: 'xxx', value: 'Yyy', start: 5, end: 14, valueStart: 10 }
       ] }
     ]
   },
@@ -679,7 +685,7 @@ module.exports = {
     data: "<div\n  id='foo'\n></div\n \n\t>",
     expected: [
       { type: _T.TAG, name: 'div', end: 17, attrs: [
-        { name: 'id', value: 'foo', start: 7, end: 15 }
+        { name: 'id', value: 'foo', start: 7, end: 15, valueStart: 11 }
       ] },
       { type: _T.TAG, name: '/div', start: 17, end: 27 }
     ]
@@ -785,7 +791,7 @@ module.exports = {
     data: "<script language='javascript'>\nvar foo = '<bar>xxx</bar>';\n</script>",
     expected: [
       { type: _T.TAG,  name: 'script', start: 0, end: 30, attrs: [
-        { name: 'language', value: 'javascript', start: 8, end: 29 }
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30, end: 59 },
       { type: _T.TAG,  name: '/script', start: 59, end: 68 }
@@ -793,10 +799,10 @@ module.exports = {
   },
 
   'closing script tag in script tag code': {
-    data: "<script language='javascript'>\nvar foo = '</script>';\n</script>",
+    data: '<script language="javascript">\nvar foo = "</script>";\n</script>',
     expected: [
-      { type: _T.TAG,  name: 'script', attrs: [
-        { name: 'language', value: 'javascript' }
+      { type: _T.TAG,  name: 'script', start: 0, end: 30, attrs: [
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30, end: 42 },
       { type: _T.TAG,  name: '/script', start: 42, end: 51 },
@@ -806,21 +812,21 @@ module.exports = {
   },
 
   'non-closing script tag <\\/script> in script tag code': {
-    data: "<script language='javascript'>\nvar foo = '<\\/script>';\n</script>",
+    data: "<script language=javascript>\nvar foo = '<\\/script>';\n</script>",
     expected: [
-      { type: _T.TAG,  name: 'script', attrs: [
-        { name: 'language', value: 'javascript' }
+      { type: _T.TAG,  name: 'script', start: 0, end: 28, attrs: [
+        { name: 'language', value: 'javascript', start: 8, end: 27, valueStart: 17 }
       ] },
-      { type: _T.TEXT, start: 30, end: 55 },
-      { type: _T.TAG,  name: '/script', start: 55, end: 64 }
+      { type: _T.TEXT, start: 28, end: 53 },
+      { type: _T.TAG,  name: '/script', start: 53, end: 62 }
     ]
   },
 
-  'comments in script tag code are preserved': {
+  'comments in script tag code are preserved always': {
     data: "<script language='javascript'>\nvar foo = '<!-- xxx -->';\n</script>",
     expected: [
-      { type: _T.TAG,  name: 'script', attrs: [
-        { name: 'language', value: 'javascript' }
+      { type: _T.TAG,  name: 'script', start: 0, end: 30, attrs: [
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30, end: 57 },
       { type: _T.TAG,  name: '/script', start: 57, end: 66 },
@@ -831,7 +837,7 @@ module.exports = {
     data: "<script language='javascript'>\nvar foo = '<![CDATA[ xxx ]]>';\n</script>",
     expected: [
       { type: _T.TAG,  name: 'script', attrs: [
-        { name: 'language', value: 'javascript' }
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30, end: 62 },
       { type: _T.TAG,  name: '/script', start: 62, end: 71 },
@@ -851,7 +857,7 @@ module.exports = {
     data: "<script language='javascript'>\n<!--\nvar foo = '<bar>xxx</bar>';\n//-->\n</script>",
     expected: [
       { type: _T.TAG, name: 'script', attrs: [
-        { name: 'language', value: 'javascript' }
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30, end: 70 },
       { type: _T.TAG, name: '/script', start: 70, end: 79 },
@@ -862,7 +868,7 @@ module.exports = {
     data: "<script language='javascript'>\n<![CDATA[\nvar foo = '<bar>xxx</bar>';\n]]>\n</script>",
     expected: [
       { type: _T.TAG, name: 'script', attrs: [
-        { name: 'language', value: 'javascript', start: 8 }
+        { name: 'language', value: 'javascript', start: 8, end: 29, valueStart: 18 }
       ] },
       { type: _T.TEXT, start: 30 },
       { type: _T.TAG, name: '/script', start: 73 },
@@ -917,7 +923,7 @@ module.exports = {
     data: '<div some=" >4</div>"\n<hr>',
     expected: [
       { type: _T.TAG, name: 'div', start: 0, end: 26, attrs: [
-        { name: 'some', value: ' >4</div>', start: 5, end: 21 },
+        { name: 'some', value: ' >4</div>', start: 5, end: 21, valueStart: 11 },
         { name: '<hr', value: '', start: 22, end: 25 }
       ] }
     ]
@@ -927,7 +933,7 @@ module.exports = {
     data: '<div some=">"5</div>',
     expected: [
       { type: _T.TAG,  name: 'div', end: 20, attrs: [
-        { name: 'some', value: '>', start: 5 },
+        { name: 'some', value: '>', start: 5, valueStart: 11 },
         { name: '5<',   value: '', start: 13 },
         { name: 'div',  value: '', start: 16 }
       ] }
@@ -938,7 +944,7 @@ module.exports = {
     data: '<div some=<</div>',
     expected: [
       { type: _T.TAG,  name: 'div', start: 0, end: 17, attrs: [
-        { name: 'some', value: '<<', start: 5, end: 12 },
+        { name: 'some', value: '<<', start: 5, end: 12, valueStart: 10 },
         { name: 'div', value: '', start: 13, end: 16 }
       ] }
     ]
@@ -948,7 +954,7 @@ module.exports = {
     data: '<div some=f>oo></div>',
     expected: [
       { type: _T.TAG,  name: 'div', attrs: [
-        { name: 'some', value: 'f', start: 5 }
+        { name: 'some', value: 'f', start: 5, valueStart: 10 }
       ] },
       { type: _T.TEXT, start: 12, end: 15 },
       { type: _T.TAG, name: '/div', start: 15 }
@@ -959,7 +965,7 @@ module.exports = {
     data: '<div some=a/c>',
     expected: [
       { type: _T.TAG,  name: 'div', attrs: [
-        { name: 'some', value: 'a', start: 5, end: 11 },
+        { name: 'some', value: 'a', start: 5, end: 11, valueStart: 10 },
         { name: 'c', value: '', start: 12, end: 13 }
       ] }
     ]
@@ -989,7 +995,7 @@ module.exports = {
     data: '<div/ some="/">',
     expected: [
       { type: _T.TAG,  name: 'div', attrs: [
-        { name: 'some', value: '/', start: 6 }
+        { name: 'some', value: '/', start: 6, end: 14, valueStart: 12 }
       ] }
     ]
   },
@@ -998,7 +1004,7 @@ module.exports = {
     data: '<div some="<!-- foo -->">',
     expected: [
       { type: _T.TAG,  name: 'div', end: 25, attrs: [
-        { name: 'some', value: '<!-- foo -->', start: 5 }
+        { name: 'some', value: '<!-- foo -->', start: 5, end: 24, valueStart: 11 }
       ] }
     ]
   },
@@ -1038,17 +1044,6 @@ module.exports = {
       { type: _T.TAG,  name: '/div', start: 18, end: 24 },
       { type: _T.TEXT, start: 24, end: 27 }
     ]
-  },
-
-  '`locations` store line/col in loc': {
-    data: '<div a=1 b=\'2\' c="3">xxx',
-    expected: [
-      { type: _T.TAG, name: 'div', attrs: [
-        { name: 'a', value: '1', start: 5, end: 8 },
-        { name: 'b', value: '2', start: 9, end: 14 },
-        { name: 'c', value: '3', start: 15, end: 20 }
-      ] },
-      { type: _T.TEXT, start: 21, end: 24 }
-    ]
   }
+
 }

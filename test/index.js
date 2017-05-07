@@ -7,12 +7,12 @@ const fs = require('fs')
 
 process.chdir(__dirname)
 
-describe('The Parser', function () {
+describe.only('The Parser', function () {
 
   const theTests = require('./tparser')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 'html5 doctype'
+  const _TDEBUG = 0//'tag with invalid attributes names'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]
@@ -98,18 +98,18 @@ describe('HTML Builder', function () {
 
     it(title, function () {
       const test    = theTests[title]
-      const parser  = htmlParser(test.options)
+      const parse   = htmlParser(test.options).parse
       const builder = htmlBuilder(test.builderOptions)
 
       if (_TDEBUG && title === _TDEBUG) debugger
 
       if (test.throws) {
         expect(function () {
-          builder.build(parser.parse(test.data))
+          builder.build(parse(test.data))
         }).toThrow(test.throws)
 
       } else {
-        const result = builder.build(parser.parse(test.data))
+        const result = builder.build(parse(test.data))
         expect(result).toBe(test.expected)
       }
     })

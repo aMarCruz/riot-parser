@@ -62,18 +62,18 @@ Object.assign(HtmlBuilder.prototype, {
 
       if (node.type !== T.TAG) {
         // not a container element...
-        this._printOther(node)
+        this.printOther(node)
 
       } else {
         const name = node.name
 
         if (name[0] !== '/') {
           // is not a closing tag
-          this._openTag(node)
+          this.openTag(node)
 
         } else {
           // closing tag, pop the stack
-          this._closeTag(name)
+          this.closeTag(name)
         }
       }
     }
@@ -85,7 +85,7 @@ Object.assign(HtmlBuilder.prototype, {
     return this._output.join('')
   },
 
-  _closeTag(name) {
+  closeTag(name) {
     const last = this._stack.pop()
 
     if (last !== name.slice(1)) {
@@ -100,7 +100,7 @@ Object.assign(HtmlBuilder.prototype, {
     if (R_PRE.test(name)) --this._raw
   },
 
-  _openTag(node) {
+  openTag(node) {
     const name   = node.name
     const allTag = [name]
 
@@ -121,7 +121,7 @@ Object.assign(HtmlBuilder.prototype, {
     }
   },
 
-  _printOther(node) {
+  printOther(node) {
     let text = this._data.slice(node.start, node.end)
 
     switch (node.type) {
