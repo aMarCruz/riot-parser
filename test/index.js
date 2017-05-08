@@ -50,7 +50,7 @@ describe.only('Expressions', function () {
   const theTests = require('./texpr')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 'ES6 with double quotes inside #2'
+  const _TDEBUG = 0//'text inside tag, like-regex sequence in expression'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]

@@ -63,9 +63,10 @@ assign(HtmlParser.prototype, {
       output
     }
 
+    const length = data.length
     let type = $_T.TEXT
 
-    while (state.pos < data.length) {
+    while (state.pos < length) {
 
       if (type === $_T.TEXT) {
         type = this.parseText(state, data)
