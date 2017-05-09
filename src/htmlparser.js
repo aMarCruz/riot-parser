@@ -10,6 +10,25 @@ import extractExpr from './extract-expr'
 import $_T from './nodetypes'
 //#endif
 
+// Matches the start of valid tags names; used with the first 2 chars after '<'
+const TAG_OPEN = /^\/?[a-zA-Z]/
+
+// Matches valid tags names AFTER the validation with R_TAG_START.
+// $1: tag name including any '/', $2: non self-closing brace (>) w/o attributes
+const TAG_NAME = /(\/?[^\s>/]+)\s*(>)?/g
+
+// Matches an attribute name-value pair (both can be empty).
+// $1: attribute name, $2: value including any quotes
+const ATTR_START = /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g
+
+const RE_SCRYLE = {
+  // Matches the closing tag of a `script` block
+  script: /<\/script\s*>/gi,
+
+  // Matches the closing tag of a `style` block
+  style: /<\/style\s*>/gi,
+}
+
 
 // The HtmlParser class ===============================================
 
@@ -54,12 +73,12 @@ assign(HtmlParser.prototype, {
     whole buffer.
   */
   _parse(data) {
-
+    const me = this
     const output = []
     const state = {
       pos: 0,
       last: null,
-      options: this.options,
+      options: me.options,
       output
     }
 
@@ -69,13 +88,13 @@ assign(HtmlParser.prototype, {
     while (state.pos < length) {
 
       if (type === $_T.TEXT) {
-        type = this.parseText(state, data)
+        type = me.parseText(state, data)
 
       } else if (type === $_T.TAG) {
-        type = this.parseTag(state, data)
+        type = me.parseTag(state, data)
 
       } else if (type === $_T.ATTR) {
-        type = this.parseAttr(state, data)
+        type = me.parseAttr(state, data)
 
       } else {
         break
@@ -83,14 +102,14 @@ assign(HtmlParser.prototype, {
     }
 
     if (type !== $_T.TEXT) {
-      this.error(state, data, 'Unexpected end of file')
+      me._err(state, data, 'Unexpected end of file')
     }
 
     return { data, output }
   },
 
   /**
-   * Minimal error handler.
+   * Custom error handler can be implemented replacing this method.
    * The `state` object includes the buffer (`data`)
    * The error position (`loc`) contains line (base 1) and col (base 0).
    *
@@ -98,7 +117,7 @@ assign(HtmlParser.prototype, {
    * @param   {object} loc      - Line and column of the error
    * @param   {string} message  - Error message
    */
-  displayError(state, loc, message) {
+  error(state, loc, message) {
     message = `[${loc.line},${loc.col}]: ${message}`
     throw new Error(message)
   },
@@ -111,8 +130,9 @@ assign(HtmlParser.prototype, {
    * @param   {string} data  - Processing buffer
    * @param   {string} msg   - Error message
    * @param   {number} [pos] - Error position
+   * @private
   */
-  error(state, data, msg, pos) {
+  _err(state, data, msg, pos) {
     if (pos == null) pos = state.pos
 
     // count unix/mac/win eols
@@ -124,7 +144,7 @@ assign(HtmlParser.prototype, {
     }
 
     state.data = data
-    this.displayError(state, { line, col }, msg)
+    this.error(state, { line, col }, msg)
   },
 
   /**
@@ -132,8 +152,9 @@ assign(HtmlParser.prototype, {
    *
    * @param   {string} str - String to add
    * @returns {RegExp} The resulting regex.
+   * @private
    */
-  _b0regex(str) {
+  _b0re(str) {
     let re = this._re[str]
     if (!re) {
       const b0 = this.options.brackets[0].replace(/(?=[[^()\-*+?.$|])/g, '\\')
@@ -214,10 +235,8 @@ assign(HtmlParser.prototype, {
    * @param   {number}  end   - Ending position (last char of the tag + 1)
    */
   pushTag(state, type, name, start, end) {
-    const tag = this.newNode(type, name, start, end)
-
     state.pos = end
-    state.output.push(state.last = tag)
+    state.output.push(state.last = this.newNode(type, name, start, end))
   },
 
   /**
@@ -234,13 +253,6 @@ assign(HtmlParser.prototype, {
     if (q.attrs) q.attrs.push(attr)
     else q.attrs = [attr]
   },
-
-  // Matches the start of valid tags names; used with the first 2 chars after '<'
-  TAG_OPEN: /^\/?[a-zA-Z]/,
-
-  // Matches valid tags names AFTER the validation with R_TAG_START.
-  // $1: tag name including any '/', $2: non self-closing brace (>) w/o attributes
-  TAG_NAME: /(\/?[^\s>/]+)\s*(>)?/g,
 
   /**
    * Parse the tag following a '<' character, or delegate to other parser
@@ -259,10 +271,10 @@ assign(HtmlParser.prototype, {
       return this.parseComment(state, data, start)
     }
 
-    if (this.TAG_OPEN.test(str)) {          // ^\/?[a-zA-Z]
-      const re = this.TAG_NAME
+    if (TAG_OPEN.test(str)) {               // ^\/?[a-zA-Z]
+      const re = TAG_NAME                   // (\/?[^\s>/]+)\s*(>)? g
       re.lastIndex = pos
-      const match = re.exec(data)           // (\/?[^\s>/]+)\s*(>)? g
+      const match = re.exec(data)
       const end   = re.lastIndex
       const name  = match[1].toLowerCase()  // $1: tag name including any '/'
 
@@ -279,7 +291,7 @@ assign(HtmlParser.prototype, {
       }
 
     } else {
-      this.pushText(state, start, pos)
+      this.pushText(state, start, pos)      // pushes the '<' as text
     }
 
     return $_T.TEXT
@@ -300,17 +312,13 @@ assign(HtmlParser.prototype, {
     const end = data.indexOf(str, pos)
 
     if (end < 0) {
-      this.error(state, data, 'Unclosed comment', start)
+      this._err(state, data, 'Unclosed comment', start)
     }
 
     this.pushComment(state, start, end + str.length)
 
     return $_T.TEXT
   },
-
-  // Matches an attribute name-value pair (both can be empty).
-  // $1: attribute name, $2: value including any quotes
-  ATTR_START: /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g,
 
   /**
    * The more complex parsing is for attributes.
@@ -340,7 +348,7 @@ assign(HtmlParser.prototype, {
     } else {
       delete tag.selfclose
 
-      const re    = this.ATTR_START         // (\S[^>/=\s]*)(?:\s*=\s*([^>/])?)? g
+      const re    = ATTR_START              // (\S[^>/=\s]*)(?:\s*=\s*([^>/])?)? g
       const start = re.lastIndex = match.index  // first non-whitespace
       match       = re.exec(data)
       const end   = re.lastIndex
@@ -378,7 +386,7 @@ assign(HtmlParser.prototype, {
 
     // Dynamically, make a regexp that matches the closing quote (ending char
     // for unquoted values) or an opening brace of an expression.
-    const re = this._b0regex(`(${quote || '[>/\\s]'})`)
+    const re = this._b0re(`(${quote || '[>/\\s]'})`)
     const expr = []
     let mm, tmp
 
@@ -386,7 +394,7 @@ assign(HtmlParser.prototype, {
     while (1) {                             // eslint-disable-line
       mm = re.exec(data)
       if (!mm) {
-        this.error(state, data, 'Unfinished attribute', start)
+        this._err(state, data, 'Unfinished attribute', start)
       }
       if (mm[1]) {
         break                               // the attribute ends
@@ -411,12 +419,6 @@ assign(HtmlParser.prototype, {
     }
   },
 
-  // Matches the closing tag of a `script` block
-  SCRIPT_CLOSE: /<\/script\s*>/gi,
-
-  // Matches the closing tag of a `style` block
-  STYLE_CLOSE: /<\/style\s*>/gi,
-
   /**
    * Parses regular text and script/style blocks ...scryle for short :-)
    * (the content of script and style is text as well)
@@ -426,34 +428,36 @@ assign(HtmlParser.prototype, {
    * @returns {number} New parser mode.
    */
   parseText(state, data) {
+    const me = this
     const pos = state.pos                  // start of the text
 
     if (state.scryle) {
       const name = state.scryle
-      const re   = name === 'script' ? this.SCRIPT_CLOSE : this.STYLE_CLOSE
+      const re   = RE_SCRYLE[name]
 
       re.lastIndex = pos
       const match = re.exec(data)
       if (!match) {
-        this.error(state, data, `Unclosed "${name}" block`, pos - 1)
+        me._err(state, data, `Unclosed "${name}" block`, pos - 1)
       }
       const start = match.index
       const end   = re.lastIndex
-      state.scryle = ''                    // no error, so reset the flag now
+      state.scryle = ''                    // reset the script/style flag now
 
       // write the tag content, if any
       if (start > pos) {
-        this.pushText(state, pos, start)
+        me.pushText(state, pos, start)
       }
+
       // now the closing tag, either </script> or </style>
-      this.pushTag(state, $_T.TAG, `/${name}`, start, end)
+      me.pushTag(state, $_T.TAG, `/${name}`, start, end)
 
     } else if (data[pos] === '<') {
       state.pos++
       return $_T.TAG
 
     } else {
-      const re = this._b0regex('<')
+      const re = me._b0re('<')
 
       re.lastIndex = pos
       let mm = re.exec(data)
@@ -461,7 +465,7 @@ assign(HtmlParser.prototype, {
       let rep
 
       while (mm && mm[0] !== '<') {
-        const tmp = this.extractExpr(data, mm.index)
+        const tmp = me.extractExpr(data, mm.index)
         if (tmp) {
           if (typeof tmp == 'string') {
             rep = tmp
@@ -475,7 +479,7 @@ assign(HtmlParser.prototype, {
 
       // if no '<' found, all remaining is text
       const end = mm ? mm.index : data.length
-      this.pushText(state, pos, end, expr, rep)
+      me.pushText(state, pos, end, expr, rep)
     }
 
     return $_T.TEXT
