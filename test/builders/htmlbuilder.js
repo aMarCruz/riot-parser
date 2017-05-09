@@ -104,10 +104,12 @@ Object.assign(HtmlBuilder.prototype, {
     const name   = node.name
     const allTag = [name]
 
-    node.attrs.forEach(a => {
-      const s = a.name
-      allTag.push(a.value ? `${s}="${a.value.replace(/"/g, '&quot;')}"` : s)
-    })
+    if (node.attrs) {
+      node.attrs.forEach(a => {
+        const s = a.name
+        allTag.push(a.value ? `${s}="${a.value.replace(/"/g, '&quot;')}"` : s)
+      })
+    }
 
     this._output.push(`<${allTag.join(' ')}>`)
 

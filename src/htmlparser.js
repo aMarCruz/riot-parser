@@ -183,22 +183,24 @@ assign(HtmlParser.prototype, {
    * @param   {number}  start  - Start position of the tag
    * @param   {number}  end    - Ending position (last char of the tag)
    * @param   {Array}   [expr] - Found expressions
+   * @param   {string}  [rep]  - Escaped brackets to replace
    */
-  pushText(state, start, end, expr) {
-    const q = state.last
+  pushText(state, start, end, expr, rep) {
+    let q = state.last
 
     state.pos = end
     if (q && q.type === $_T.TEXT) {
       q.end = end
     } else {
-      state.last = this.newNode($_T.TEXT, null, start, end)
-      state.output.push(state.last)
+      state.last = q = this.newNode($_T.TEXT, null, start, end)
+      state.output.push(q)
     }
 
     if (expr && expr.length) {
-      const q2 = state.last
-      q2.expr = q2.expr ? q2.expr.concat(expr) : expr
+      q.expr = q.expr ? q.expr.concat(expr) : expr
     }
+
+    if (rep) q.replace = rep
   },
 
   /**
@@ -391,8 +393,12 @@ assign(HtmlParser.prototype, {
       }
       tmp = this.extractExpr(data, mm.index)
       if (tmp) {
-        expr.push(tmp)
-        re.lastIndex = tmp.end
+        if (typeof tmp == 'string') {
+          attr.replace = tmp
+        } else {
+          expr.push(tmp)
+          re.lastIndex = tmp.end
+        }
       }
     }
 
@@ -452,18 +458,24 @@ assign(HtmlParser.prototype, {
       re.lastIndex = pos
       let mm = re.exec(data)
       let expr
+      let rep
+
       while (mm && mm[0] !== '<') {
         const tmp = this.extractExpr(data, mm.index)
         if (tmp) {
-          (expr || (expr = [])).push(tmp)
-          re.lastIndex = tmp.end
+          if (typeof tmp == 'string') {
+            rep = tmp
+          } else {
+            (expr || (expr = [])).push(tmp)
+            re.lastIndex = tmp.end
+          }
         }
         mm = re.exec(data)
       }
 
       // if no '<' found, all remaining is text
       const end = mm ? mm.index : data.length
-      this.pushText(state, pos, end, expr)
+      this.pushText(state, pos, end, expr, rep)
     }
 
     return $_T.TEXT

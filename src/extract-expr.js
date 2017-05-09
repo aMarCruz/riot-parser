@@ -47,6 +47,11 @@ ExprExtractor.prototype = {
     const bp = this._bp
     const re = this._re
 
+    // Escaped brackets like "\{" must be converted by the builder to literal brackets.
+    if (code[start - 1] === '\\') {
+      return bp[0]
+    }
+
     const closingStr = bp[1]
     const offset = start + bp[0].length
     const stack = []                        // braces (or 1, for ES6 TL)
@@ -57,13 +62,19 @@ ExprExtractor.prototype = {
 
     while ((match = re.exec(code))) {
       const end = re.lastIndex
-      const str = match[0]
+      let str = match[0]
 
-      if (str === closingStr && !stack.length) {
-        return {
-          text: code.slice(offset, match.index),
-          start,
-          end
+      if (str === closingStr) {
+        if (!stack.length) {
+          return {
+            text: code.slice(offset, match.index),
+            start,
+            end
+          }
+        }
+        if (/[\])}]/.test(str[0])) {
+          str = str[0]
+          re.lastIndex = match.index + 1
         }
       }
 
@@ -153,7 +164,7 @@ ExprExtractor.prototype = {
       else if (c === '-') c = `\\${c}`
       s = '[`' + c + '/\\{}[\\]()]'
     } else {
-      s = s.replace(/(?=[[^()\-*+?.$|])/g, '\\') + '|[`/\\{}[\\]()]'
+      s = c.replace(/(?=[[^()\-*+?.$|])/g, '\\') + '|[`/\\{}[\\]()]'
     }
     return s
   }

@@ -45,7 +45,7 @@ describe('The Parser', function () {
 })
 
 
-describe.only('Expressions', function () {
+describe('Expressions', function () {
 
   const theTests = require('./texpr')
   const titles = Object.keys(theTests)

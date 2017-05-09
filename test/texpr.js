@@ -250,6 +250,40 @@ module.exports = {
     ]
   },
 
+  'escaped left bracket generates a `replace` property w/bracket as value': {
+    data: '<a foo="\\{{e}"/>',
+    expected: [
+      {
+        type: _T.TAG, name: 'a', start: 0, end: 16, selfclose: true, attrs: [
+          {
+            name: 'foo', value: '\\{{e}', start: 3, end: 14, valueStart: 8, replace: '{',
+            expr: [
+              { text: 'e', start: 10, end: 13 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  'escaped left bracket generates a `replace` property w/bracket as value #2': {
+    data: '<a foo="\\{\\{}"/>',
+    expected: [
+      {
+        type: _T.TAG, name: 'a', start: 0, end: 16, selfclose: true, attrs: [
+          {
+            name: 'foo', value: '\\{\\{}', start: 3, end: 14, valueStart: 8, replace: '{'
+          }
+        ]
+      }
+    ]
+  },
+
+  // =========================================================================
+  // ES6
+  // =========================================================================
+
+
   'ES6 expression inside tag': {
     data: '<div>foo & { `bar${baz}` }</div>',
     expected: [
@@ -346,6 +380,185 @@ module.exports = {
         { text: ' `bar${ "a" + `b${a + "}"}` }` ', start: 11, end: 44 }
       ] },
       { type: _T.TAG, name: '/div', start: 44, end: 50 }
+    ]
+  },
+
+  // =========================================================================
+  // Custom brackets
+  // =========================================================================
+
+  'Custom brackets `[ ]`': {
+    options: { brackets: ['[', ']'] },
+    data: '<a>[1+2]</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 8, expr: [
+        { text: '1+2', start: 3, end: 8 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 8, end: 12 }
+    ]
+  },
+
+  'Custom brackets `[ ]` w/nested brackets': {
+    options: { brackets: ['[', ']'] },
+    data: '<a>[a[1]]</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 9, expr: [
+        { text: 'a[1]', start: 3, end: 9 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 9, end: 13 }
+    ]
+  },
+
+  'Custom brackets `[[ ]]` w/nested brackets': {
+    options: { brackets: ['[[', ']]'] },
+    data: '<a>[[a[1]]]</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 11, expr: [
+        { text: 'a[1]', start: 3, end: 11 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 11, end: 15 }
+    ]
+  },
+
+  'Custom brackets `[ ]` w/preceding escaped bracket': {
+    options: { brackets: ['[', ']'] },
+    data: '<a>\\[[1+2]</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 10, replace: '[', expr: [
+        { text: '1+2', start: 5, end: 10 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 10, end: 14 }
+    ]
+  },
+
+  'Custom brackets `( )` w/nested brackets': {
+    options: { brackets: ['(', ')'] },
+    data: '<a>(a(1))</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 9, expr: [
+        { text: 'a(1)', start: 3, end: 9 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 9, end: 13 }
+    ]
+  },
+
+  'Custom brackets `( )` preceding by escaped bracket': {
+    options: { brackets: ['(', ')'] },
+    data: '<a>\\((1+2)</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 10, replace: '(', expr: [
+        { text: '1+2', start: 5, end: 10 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 10, end: 14 }
+    ]
+  },
+
+  'Custom brackets `([ ])` w/nested brackets': {
+    options: { brackets: ['([', '])'] },
+    data: '<a>([a([1])])</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 13, expr: [
+        { text: 'a([1])', start: 3, end: 13 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 13, end: 17 }
+    ]
+  },
+
+  'Custom brackets `{{ }` w/nested brackets': {
+    options: { brackets: ['{{', '}'] },
+    data: '<a>{{{}}</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 8, expr: [
+        { text: '{}', start: 3, end: 8 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 8, end: 12 }
+    ]
+  },
+
+  'Custom brackets `{ }}` w/nested brackets': {
+    options: { brackets: ['{', '}}'] },
+    data: '<a>{{}}}</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 8, expr: [
+        { text: '{}', start: 3, end: 8 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 8, end: 12 }
+    ]
+  },
+
+  'Custom brackets `${ }` w/ES6 inside': {
+    options: { brackets: ['${', '}'] },
+    data: '<a>${`a${0}`}</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 13, expr: [
+        { text: '`a${0}`', start: 3, end: 13 }
+      ] },
+      { type: _T.TAG, name: '/a', start: 13, end: 17 }
+    ]
+  },
+
+  'Custom brackets `${ }` w/ES6 inside in quoted attr': {
+    options: { brackets: ['${', '}'] },
+    data: '<a b="${ `a${0}` }" />',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 22, attrs: [
+        { name: 'b', value: '${ `a${0}` }', start: 3, end: 19, valueStart: 6,
+          expr: [
+            { text: ' `a${0}` ', start: 6, end: 18 }
+          ]
+        }
+      ], selfclose: true }
+    ]
+  },
+
+  'Custom brackets `${ }` w/ES6 inside in unquoted attr': {
+    options: { brackets: ['${', '}'] },
+    data: '<a b=${ `a${0}` } />',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 20, attrs: [
+        { name: 'b', value: '${ `a${0}` }', start: 3, end: 17, valueStart: 5,
+          expr: [
+            { text: ' `a${0}` ', start: 5, end: 17 }
+          ]
+        }
+      ], selfclose: true }
+    ]
+  },
+
+  'Custom brackets `${ }` preceding by escaped bracket in attr': {
+    options: { brackets: ['${', '}'] },
+    data: '<a b="\\${${{}}}" />',
+    expected: [
+      {
+        type: _T.TAG,
+        name: 'a',
+        start: 0,
+        end: 19,
+        attrs: [
+          {
+            name: 'b',
+            value: '\\${${{}}}',
+            start: 3,
+            end: 16,
+            replace: '${',
+            valueStart: 6,
+            expr: [
+              { text: '{}', start: 9, end: 14 }
+            ]
+          }
+        ],
+        selfclose: true
+      }
     ]
   },
 
