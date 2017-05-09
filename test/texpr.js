@@ -198,7 +198,7 @@ module.exports = {
     ]
   },
 
-  'attr: single quoted expr inside double quoted value': {
+  'single quoted expr inside double quoted attribute value': {
     data: '<a foo="{\'e\'}"/>',
     expected: [
       {
@@ -211,7 +211,7 @@ module.exports = {
     ]
   },
 
-  'attr: single quoted expr inside single quoted value': {
+  'single quoted expr inside single quoted attribute value': {
     data: "<a foo='{'e'}'/>",
     expected: [
       {
@@ -224,7 +224,7 @@ module.exports = {
     ]
   },
 
-  'attr: double quoted expr inside single quoted value': {
+  'double quoted expr inside single quoted attribute value': {
     data: '<a foo=\'{"e"}\'/>',
     expected: [
       {
@@ -237,7 +237,7 @@ module.exports = {
     ]
   },
 
-  'attr: double quoted expr inside double quoted value': {
+  'double quoted expr inside double quoted attribute value': {
     data: '<a foo="{"e"}"/>',
     expected: [
       {
@@ -247,6 +247,30 @@ module.exports = {
           ] }
         ]
       }
+    ]
+  },
+
+  'multiline string (using "\\") inside attribute value': {
+    data: '<a data-templ={\n"<div>\\\n\t<a></a>\\\n</div>"\n}/>',
+    expected: [
+      {
+        type: _T.TAG, name: 'a', start: 0, end: 45, selfclose: true, attrs: [
+          { name: 'data-templ', value: '{\n"<div>\\\n\t<a></a>\\\n</div>"\n}', start: 3, end: 43, valueStart: 14,
+            expr: [{ text: '\n"<div>\\\n\t<a></a>\\\n</div>"\n', start: 14, end: 43 }]
+          }
+        ]
+      }
+    ]
+  },
+
+  'multiline string (using "\\") inside text node': {
+    data: '<a>data-templ={\n"<div>\\\n\t<a></a>\\\n</div>"\n}</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 43,
+        expr: [{ text: '\n"<div>\\\n\t<a></a>\\\n</div>"\n', start: 14, end: 43 }]
+      },
+      { type: _T.TAG, name: '/a', start: 43, end: 47 }
     ]
   },
 
@@ -276,6 +300,15 @@ module.exports = {
           }
         ]
       }
+    ]
+  },
+
+  'escaped left bracket generates a `replace` property w/bracket as value #3': {
+    data: '<a>foo="\\{\\{}"</a>',
+    expected: [
+      { type: _T.TAG, name: 'a', start: 0, end: 3 },
+      { type: _T.TEXT, start: 3, end: 14, replace: '{' },
+      { type: _T.TAG, name: '/a', start: 14, end: 18 }
     ]
   },
 
