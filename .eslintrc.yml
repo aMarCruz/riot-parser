@@ -141,7 +141,7 @@ rules:
     - mode: minimum
   keyword-spacing: 2              # enforces spacing before and after keywords
   linebreak-style: [2, "unix"]
-  max-depth: [2, 5]               # maximum depth blocks can be nested
+  max-depth: [2, 6]               # maximum depth blocks can be nested
   max-len:                        # maximum line length is 96, except for urls and regexes
     - 2
     - 120

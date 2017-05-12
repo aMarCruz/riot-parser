@@ -4,69 +4,81 @@ const _T = fn().nodeTypes
 
 module.exports = {
 
-  'must preserve spaces around': {
-    data: '{ 0 }',
+  'must preserve inner spaces': {
+    data: '<p>{ 0 }</p>',
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 5, expr: [
-          { text: ' 0 ', start: 0, end: 5 }
+        type: _T.TEXT, start: 3, end: 8, expr: [
+          { text: ' 0 ', start: 3, end: 8 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 8, end: 12 }
     ]
   },
 
-  'must preserve spaces around #2': {
-    data: 'foo {\n\t0\n}',
+  'must preserve inner spaces #2': {
+    data: '<p>{\n\t0\n}</p>',
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 10, expr: [
-          { text: '\n\t0\n', start: 4, end: 10 }
+        type: _T.TEXT, start: 3, end: 9, expr: [
+          { text: '\n\t0\n', start: 3, end: 9 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 9, end: 13 }
     ]
   },
 
-  'must preserve spaces around #3': {
-    data: 'foo {\n0\n+\n1 }',
+  'must preserve inner spaces #3': {
+    data: '<p>{\n0\n+\n1 }</p>',
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 13, expr: [
-          { text: '\n0\n+\n1 ', start: 4, end: 13 }
+        type: _T.TEXT, start: 3, end: 12, expr: [
+          { text: '\n0\n+\n1 ', start: 3, end: 12 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 12, end: 16 }
     ]
   },
 
   'must handle double quotes inside unquoted expression': {
-    data: 'foo {"<a>"}',
+    data: '<p>foo {"<a>"}</p>',
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 11, expr: [
-          { text: '"<a>"', start: 4, end: 11 }
+        type: _T.TEXT, start: 3, end: 14, expr: [
+          { text: '"<a>"', start: 7, end: 14 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 14, end: 18 }
     ]
   },
 
   'must handle double quotes inside double quoted expression': {
-    data: 'foo "{"<a>"}"',
+    data: '<p>foo "{"<a>"}"</p>',
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 13, expr: [
-          { text: '"<a>"', start: 5, end: 12 }
+        type: _T.TEXT, start: 3, end: 16, expr: [
+          { text: '"<a>"', start: 8, end: 15 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 16, end: 20 }
     ]
   },
 
   'must handle single quotes inside single quoted expression': {
-    data: "foo '{'<a>'}'",
+    data: "<p>foo '{'<a>'}'</p>",
     expected: [
+      { type: _T.TAG, name: 'p', start: 0, end: 3 },
       {
-        type: _T.TEXT, start: 0, end: 13, expr: [
-          { text: "'<a>'", start: 5, end: 12 }
+        type: _T.TEXT, start: 3, end: 16, expr: [
+          { text: "'<a>'", start: 8, end: 15 }
         ]
-      }
+      },
+      { type: _T.TAG, name: '/p', start: 16, end: 20 }
     ]
   },
 

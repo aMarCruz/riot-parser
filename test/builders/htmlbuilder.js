@@ -23,7 +23,7 @@ const VOID_TAGS = require('./void-tags')
 const T = require('../../')().nodeTypes
 
 // Do not touch text content inside this tags
-const R_PRE = /^\/?(?:pre|script)$/
+const R_PRE = /^\/?(?:pre|textarea|script|style)$/
 
 // Class htmlBuilder ======================================
 
@@ -135,6 +135,7 @@ Object.assign(HtmlBuilder.prototype, {
 
       case T.TEXT:
         if (!this._raw && this.options.compact) {
+          if (!/\S/.test(text)) return
           text = text.replace(/\s+/g, ' ')
         }
         break

@@ -10,39 +10,40 @@ module.exports = {
   - Regular text:
     Whitespace normalization, incluing text in `style` sections (Optional removal of only-whitespace text).
   */
-  'discards extra whitespace in text nodes': {
-    options: { compact: true },
+  '`compact` option by default discards empty text nodes between tags': {
     data: '\n\n<i>\n the  <b> bold</b> text \t\n</i> \n',
-    expected: ' <i> the <b> bold</b> text </i> '
+    expected: '<i> the <b> bold</b> text </i>'
   },
 
-  'discards extra whitespace in STYLE blocks': {
-    data: '<style>\n p {\n  font-weight: bold;\n}\n</style>',
-    expected: '<style> p { font-weight: bold; } </style>'
+  'whitespace within STYLE blocks must preserved always': {
+    data:     '<style>\n p {\n font-weight: bold;\n}\n</style>',
+    expected: '<style>\n p {\n font-weight: bold;\n}\n</style>'
   },
 
-  'preserves whitespace within SCRIPT tags': {
-    data: '<div>\n\n</div>\n<script>\n  var a=0\n  var b\n\n  return\n</script>\n<div>\n\n</div>',
-    expected: '<div> </div> <script>\n  var a=0\n  var b\n\n  return\n</script> <div> </div>'
+  'whitespace within SCRIPT blocks must preserved always': {
+    data: '<div>\n\n<div>\n<script>\n  var a=0\n  var b\n\n  return\n</script>\n</div>\n\n</div>',
+    expected:   '<div><div><script>\n  var a=0\n  var b\n\n  return\n</script></div></div>'
   },
 
-  'preserves whitespace within PRE tag': {
+  'whitespace in PRE content is preserved': {
     data: '<div>\n  Text:\n<pre>\n  Text  <span>\nok </span>\n </pre>\n\n</div>',
-    expected: '<div> Text: <pre>\n  Text  <span>\nok </span>\n </pre> </div>'
+    expected: '<div> Text: <pre>\n  Text  <span>\nok </span>\n </pre></div>'
   },
 
-  'preserves whitespace inside comments': {
+  'whitespace in TEXTAREA values is preserved': {
+    data: '<div>\n  Text:\n<textarea>\n  Text\t\tok </textarea>\n </div>',
+    expected: '<div> Text: <textarea>\n  Text\t\tok </textarea></div>'
+  },
+
+  'whitespace inside comments is preserved': {
     options: { comments: true },
-    data: '<body>\n<!--\n  this is\n  a comment\n\n -->\n</body>',
-    expected: '<body> <!--\n  this is\n  a comment\n\n --> </body>'
+    data:   '<body>\n<!--\n  this is\n  a comment\n\n -->\n</body>',
+    expected: '<body><!--\n  this is\n  a comment\n\n --></body>'
   },
 
-  '`compact` option replaces whitespace-only text nodes with one space': {
-    options: {
-      builder: { compact: true }
-    },
-    data: '<div>\n Line one\n<br> \t\n<br>\nline two<font> x </font>\n </div>',
-    expected: '<div> Line one <br> <br> line two<font> x </font> </div>'
+  'whitespace inside text nodes is converted to one space': {
+    data: '<div>\n Line one\n<br> \t\n<br>\nline two<font> x </font></div>',
+    expected: '<div> Line one <br><br> line two<font> x </font></div>'
   },
 
   /*
@@ -55,14 +56,9 @@ module.exports = {
     expected: '<html><body>text</body></html>'
   },
 
-  /*
-  - Self-closing tags:
-    Removes the '/' and, if is not a void tag, adds the closing tag
-  */
-
-  'removes the `/` of self-closing tags and auto-close non void tags': {
-    data: '<div />\ntext<br />\n<hr/>\n <img src="foo"/>\n <p/>',
-    expected: '<div></div> text<br> <hr> <img src="foo"> <p></p>'
+  'removes the `/` of self-closing tags': {
+    data: '<div><a />\ntext<br />\n<hr/>\n <img src="foo" />\n <p/></div>',
+    expected: '<div><a></a> text<br><hr><img src="foo"><p></p></div>'
   },
 
   /*
@@ -72,26 +68,26 @@ module.exports = {
 
   'Attributes: Names are converted to lowercase': {
     data: '<div  CLASS="foo" Bar onClick ="f()" foo-Bar="bar" >\n</div>',
-    expected: '<div class="foo" bar onclick="f()" foo-bar="bar"> </div>'
+    expected: '<div class="foo" bar onclick="f()" foo-bar="bar"></div>'
   },
 
   'Attributes: Removes extra whitespace': {
-    data: '<div  class = "foo"\n bar style \t="p{}" foo\n=\n "bar" >\n<font size= "14"> text </font></div>',
-    expected: '<div class="foo" bar style="p{}" foo="bar"> <font size="14"> text </font></div>'
+    data: '<div  class = "foo"\n bar style \t="p{}" foo\n=\n "bar" >\n<font size= "14">  \t text  </font></div>',
+    expected: '<div class="foo" bar style="p{}" foo="bar"><font size="14"> text </font></div>'
   },
 
   'Attributes: Removes empty values': {
     data: '<div  class="" bar style=\'\' foo=>\n<img src="">\n</div>',
-    expected: '<div class bar style foo> <img src> </div>'
+    expected: '<div class bar style foo><img src></div>'
   },
 
   'Attributes: Single quoted values are converted to double quoted': {
-    data: "<font size= '14' class ='foo' > text</font>",
+    data:     "<font size= '14' class ='foo' > text</font>",
     expected: '<font size="14" class="foo"> text</font>'
   },
 
   'Attributes: Unquoted values are enclosed in double quotes': {
-    data: '<font size= 14 class =foo > text</font>',
+    data:     '<font size= 14 class =foo > text</font>',
     expected: '<font size="14" class="foo"> text</font>'
   },
 
@@ -155,12 +151,12 @@ module.exports = {
   */
 
   'Unescaped chars in script': {
-    data: '<head><script>var foo= "<bar>"; alert(2>foo); var baz =10 <<2; var zip = 10>>1; var yap= "<<>>><<";</script></head>',
+    data:     '<head><script>var foo= "<bar>"; alert(2>foo); var baz =10 <<2; var zip = 10>>1; var yap= "<<>>><<";</script></head>',
     expected: '<head><script>var foo= "<bar>"; alert(2>foo); var baz =10 <<2; var zip = 10>>1; var yap= "<<>>><<";</script></head>'
   },
 
   'Unescaped characters in style': {
-    data: '<style type="text/css">\n body > p\n  { font-weight: bold; }</style>',
-    expected: '<style type="text/css"> body > p { font-weight: bold; }</style>'
+    data:     '<style type="text/css">\n body > p\n  { font-weight: bold; }</style>',
+    expected: '<style type="text/css">\n body > p\n  { font-weight: bold; }</style>'
   }
 }

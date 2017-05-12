@@ -10,21 +10,29 @@ import extractExpr from './extract-expr'
 import $_T from './nodetypes'
 //#endif
 
-// Matches the start of valid tags names; used with the first 2 chars after '<'
-const TAG_OPEN = /^\/?[a-zA-Z]/
+/**
+ * Matches the start of valid tags names; used with the first 2 chars after the `'<'`.
+ * @const {RegExp}
+ */
+const TAG_2C = /^(?:\/>|\/?[a-zA-Z])/
 
-// Matches valid tags names AFTER the validation with R_TAG_START.
-// $1: tag name including any '/', $2: non self-closing brace (>) w/o attributes
-const TAG_NAME = /(\/?[^\s>/]+)\s*(>)?/g
+/**
+ * Matches valid tags names AFTER the validation with `TAG_2C`.
+ * $1: tag name including any `'/'`, $2: non self-closing brace (`>`) w/o attributes.
+ * @const {RegExp}
+ */
+const TAG_NAME = /\/(>)|(\/?[^\s>/]+)\s*(>)?/g
 
-// Matches an attribute name-value pair (both can be empty).
-// $1: attribute name, $2: value including any quotes
+/**
+ * Matches an attribute name-value pair (both can be empty).
+ * $1: attribute name, $2: value including any quotes.
+ * @const {RegExp}
+ */
 const ATTR_START = /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g
 
 const RE_SCRYLE = {
   // Matches the closing tag of a `script` block
   script: /<\/script\s*>/gi,
-
   // Matches the closing tag of a `style` block
   style: /<\/style\s*>/gi,
 }
@@ -78,14 +86,14 @@ assign(HtmlParser.prototype, {
     const state = {
       pos: 0,
       last: null,
-      options: me.options,
+      count: -1,
       output
     }
 
     const length = data.length
     let type = $_T.TEXT
 
-    while (state.pos < length) {
+    while (state.pos < length && state.count) {
 
       if (type === $_T.TEXT) {
         type = me.parseText(state, data)
@@ -101,11 +109,15 @@ assign(HtmlParser.prototype, {
       }
     }
 
-    if (type !== $_T.TEXT) {
+    if (!state.root) {
+      me._err(state, data, 'Root tag not found.')
+    }
+
+    if (type !== $_T.TEXT || state.root && state.count) {
       me._err(state, data, 'Unexpected end of file')
     }
 
-    return { data, output }
+    return { data, output, root: state.root }
   },
 
   /**
@@ -192,7 +204,7 @@ assign(HtmlParser.prototype, {
   pushComment(state, start, end) {
     state.last = null
     state.pos  = end
-    if (state.options.comments) {
+    if (this.options.comments) {
       state.output.push(this.newNode($_T.COMMENT, null, start, end))
     }
   },
@@ -237,6 +249,20 @@ assign(HtmlParser.prototype, {
   pushTag(state, type, name, start, end) {
     state.pos = end
     state.output.push(state.last = this.newNode(type, name, start, end))
+
+    if (state.root) {
+      if (name === state.closeName) {
+        state.count--
+      } else if (name === state.root.name) {
+        state.count++
+      }
+    } else {
+      // start with root
+      if (state.output.length > 1) state.output.splice(0, state.output.length - 1)
+      state.root = state.last
+      state.closeName = '/' + name
+      state.count = 1
+    }
   },
 
   /**
@@ -271,22 +297,24 @@ assign(HtmlParser.prototype, {
       return this.parseComment(state, data, start)
     }
 
-    if (TAG_OPEN.test(str)) {               // ^\/?[a-zA-Z]
-      const re = TAG_NAME                   // (\/?[^\s>/]+)\s*(>)? g
+    if (TAG_2C.test(str)) {                 // ^\/?[a-zA-Z]
+      const re = TAG_NAME                   // (\/?(?:>|[^\s>/]+)\s*(>)?) g
       re.lastIndex = pos
       const match = re.exec(data)
       const end   = re.lastIndex
-      const name  = match[1].toLowerCase()  // $1: tag name including any '/'
+      const hack  = match[1]
+      const name  = hack ? 'script' : match[2].toLowerCase()  // $1: tag name including any '/'
 
       // script/style block is parsed as another tag to extract attributes
       if (name === 'script' || name === 'style') {
-        state.scryle = name                 // used by parseText
+        state.scryle = name         // used by parseText
+        state.hack = hack && RegExp(`<${state.closeName}\\s*>`, 'i')
       }
 
       this.pushTag(state, $_T.TAG, name, start, end)
 
       // only '>' can ends the tag here, the '/' is handled in parseAttr
-      if (match[2] !== '>') {               // $2: non self-closing brace w/o attr
+      if (!hack && match[3] !== '>') {      // $2: non self-closing brace w/o attr
         return $_T.ATTR
       }
 
@@ -339,6 +367,9 @@ assign(HtmlParser.prototype, {
 
     } else if (match[0] === '>') {
       state.pos = tag.end = _CH.lastIndex
+      if (tag.selfclose && state.root.name === tag.name) {
+        state.count--   // pop nested root
+      }
       return $_T.TEXT
 
     } else if (match[0] === '/') {          // self closing tag?
@@ -433,7 +464,7 @@ assign(HtmlParser.prototype, {
 
     if (state.scryle) {
       const name = state.scryle
-      const re   = RE_SCRYLE[name]
+      const re   = state.hack || RE_SCRYLE[name]
 
       re.lastIndex = pos
       const match = re.exec(data)
@@ -441,8 +472,8 @@ assign(HtmlParser.prototype, {
         me._err(state, data, `Unclosed "${name}" block`, pos - 1)
       }
       const start = match.index
-      const end   = re.lastIndex
-      state.scryle = ''                    // reset the script/style flag now
+      const end   = state.hack ? start : re.lastIndex
+      state.hack = state.scryle = 0         // reset the script/style flag now
 
       // write the tag content, if any
       if (start > pos) {

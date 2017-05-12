@@ -12,7 +12,7 @@ describe('The Parser', function () {
   const theTests = require('./tparser')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 0//'attributes with empty value (w/ equal sign) #3'
+  const _TDEBUG = 0//'comments are ignored by default'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]
@@ -91,7 +91,7 @@ describe('HTML Builder', function () {
   const theTests = require('./thtmlbuilder')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 0//'Throws on closing *void* tags'
+  const _TDEBUG = 0//'Attributes: Single quoted values are converted to double quoted'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]
@@ -146,6 +146,36 @@ describe('HTML Builder 2', function () {
 
     const result = builder.build(parser.parse(source))
     expect(result).toBe(expected)
+  })
+
+})
+
+describe('Tree Builder', function () {
+  const builder = require('./builders/tree-builder')()
+
+  it('test 1', function () {
+    const source  = fs.readFileSync('fixtures/box.tag', 'utf8').trim()
+    const parse   = htmlParser().parse
+    debugger
+
+    const result = builder.build(parse(source))
+    console.log(result)
+    expect(1).toBe(1)
+  })
+
+})
+
+describe('Riot Builder', function () {
+  const riotBuilder = require('./builders/riot-builder')
+
+  it('test 1', function () {
+    const source  = fs.readFileSync('fixtures/box.tag', 'utf8').trim()
+    const parse   = htmlParser().parse
+    const builder = riotBuilder({ compact: true })
+
+    const result = builder.build(parse(source))
+    console.log(result)
+    expect(1).toBe(1)
   })
 
 })

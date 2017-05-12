@@ -1,10 +1,10 @@
 {
-  "name": "riot-html-parser",
+  "name": "riot-parser",
   "version": "0.1.1",
   "description": "The riot parser for HTML files",
-  "main": "./dist/riot-html-parser.js",
-  "module": "./dist/riot-html-parser.es.js",
-  "jsnext:main": "./dist/riot-html-parser.es.js",
+  "main": "./dist/riot-parser.js",
+  "module": "./dist/riot-parser.es.js",
+  "jsnext:main": "./dist/riot-parser.es.js",
   "license": "MIT",
   "engines": {
     "node": ">=4.0"
@@ -12,7 +12,6 @@
   "scripts": {
     "test": "mocha ./test/index.js",
     "lint": "eslint src test/index.js",
-    "echo": "node ./test/echo.js",
     "pretest": "rollup -m -c",
     "build": "rm -rf dist/* && rollup -m -c",
     "prepublish": "npm run lint && rm -rf dist/* && npm test"
@@ -23,7 +22,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/riot/riot-html-parser"
+    "url": "https://github.com/riot/riot-parser"
   },
   "keywords": [
     "html",

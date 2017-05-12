@@ -19,8 +19,7 @@ function compareObjects(a, b) {
   for (p in a) {
     if (typeof b[p] == 'undefined') {
       // console.log('Missing property: ', p);
-      if (/^(?:start|end|attributes)$/.test(p) ||
-        /^(?:childNodes|attrs|_attrs|attrs|_flags)$/.test(p) && isEmpty(a[p])) {
+      if (/^(?:start|end|attrs)$/.test(p) && isEmpty(a[p])) {
         continue
       }
       return false
