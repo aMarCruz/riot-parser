@@ -38,11 +38,12 @@ Object.assign(TreeBuilder.prototype, {
   _build(input) {
 
     const nodes = input.output
+    const data = input.data
     const output = {
       tag: input.root,
       scripts: [],
       styles: [],
-      data: input.data
+      data
     }
     this._stack = [this._last = output.tag]
 
@@ -72,7 +73,7 @@ Object.assign(TreeBuilder.prototype, {
 
       } else if (node.type === T.TEXT) {
         // not a container element...
-        this.pushNode(node)
+        this.pushText(node, data)
       }
     }
 
@@ -83,8 +84,48 @@ Object.assign(TreeBuilder.prototype, {
     return output
   },
 
-  pushNode(node) {
-    (this._last.nodes || (this._last.nodes = [])).push(node)
+  _re: {},
+  _regex(c) {
+    return this._re[c] || (this._re[c] = new RegExp(`\\${c}`, 'g'))
+  },
+
+  setExpr(node, text, offset) {
+    const exprList = node.expr
+    const parts = []
+    let pos = 0
+    debugger
+    for (let i = 0; i < exprList.length; i++) {
+      const expr = exprList[i]
+      const rep = node.replace
+      let part = text.slice(pos, expr.start -= offset)
+      if (rep) {
+        part = part.replace(this._regex(rep), rep)
+      }
+      parts.push(part, expr)
+      pos = expr.end -= offset
+    }
+    if (pos < text.length) parts.push(text.slice(pos))
+    node.expr = parts
+  },
+
+  pushText(node, data) {
+    if (node.expr) {
+      this.setExpr(node, data.slice(node.start, node.end), node.start)
+    }
+    this.pushNode(node)
+  },
+
+  pushTag(node) {
+    const attrList = node.attrs
+    if (attrList) {
+      for (let i = 0; i < attrList.length; i++) {
+        const attr = attrList[i]
+        if (attr.expr) {
+          this.setExpr(attr, attr.value, attr.valueStart)
+          delete attr.value
+        }
+      }
+    }
   },
 
   closeTag(node, name) {
@@ -105,7 +146,11 @@ Object.assign(TreeBuilder.prototype, {
     this._stack.pop()
     this._last.end = node.end
     this._last = this._stack[this._stack.length - 1]
-  }
+  },
+
+  pushNode(node) {
+    (this._last.nodes || (this._last.nodes = [])).push(node)
+  },
 
 })
 

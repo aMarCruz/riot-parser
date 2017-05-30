@@ -14,7 +14,7 @@ import $_T from './nodetypes'
  * Matches the start of valid tags names; used with the first 2 chars after the `'<'`.
  * @const {RegExp}
  */
-const TAG_2C = /^(?:\/>|\/?[a-zA-Z])/
+const TAG_2C = /^(?:\/[a-zA-Z>]|[a-zA-Z][^\s>/]?)/
 
 /**
  * Matches valid tags names AFTER the validation with `TAG_2C`.
@@ -113,7 +113,7 @@ assign(HtmlParser.prototype, {
       me._err(state, data, 'Root tag not found.')
     }
 
-    if (type !== $_T.TEXT || state.root && state.count) {
+    if (state.count || type !== $_T.TEXT) {
       me._err(state, data, 'Unexpected end of file')
     }
 
@@ -349,23 +349,27 @@ assign(HtmlParser.prototype, {
   },
 
   /**
-   * The more complex parsing is for attributes.
+   * The more complex parsing is for attributes as it can contain quoted or
+   * unquoted values or expressions.
    *
    * @param   {object} state - Parser state
    * @param   {string} data  - Buffer to parse
    * @returns {number} New parser mode.
    */
   parseAttr(state, data) {
-    const tag = state.last                  // the last tag in the output
+    const tag = state.last                  // the last (current) tag in the output
     const _CH = /\S/g                       // matches the first non-space char
 
-    _CH.lastIndex = state.pos               // point to the start of the name
+    _CH.lastIndex = state.pos               // first char of attribute's name
     let match = _CH.exec(data)
 
     if (!match) {
-      state.pos = data.length               // return ATTR with this will generate error
+      state.pos = data.length               // reaching the end of the buffer with
+                                            // $_T.ATTR will generate error
 
     } else if (match[0] === '>') {
+      // closing char found. If this is a self-closing tag with the name of the
+      // Root tag, we need decrement the counter as we are changing mode.
       state.pos = tag.end = _CH.lastIndex
       if (tag.selfclose && state.root.name === tag.name) {
         state.count--   // pop nested root
@@ -373,12 +377,13 @@ assign(HtmlParser.prototype, {
       return $_T.TEXT
 
     } else if (match[0] === '/') {          // self closing tag?
-      state.pos = _CH.lastIndex
-      tag.selfclose = true
+      state.pos = _CH.lastIndex             // maybe. delegate the validation
+      tag.selfclose = true                  // the next loop
 
     } else {
-      delete tag.selfclose
-
+      delete tag.selfclose                  // ensure unmark as selfclosing
+      // its a tag, go get the name and the first char of the value (mostly a quote)
+      // we can find no value at all (even if there is an equal sign).
       const re    = ATTR_START              // (\S[^>/=\s]*)(?:\s*=\s*([^>/])?)? g
       const start = re.lastIndex = match.index  // first non-whitespace
       match       = re.exec(data)
@@ -388,6 +393,8 @@ assign(HtmlParser.prototype, {
       const attr  = { name: match[1].toLowerCase(), value, start, end }
 
       if (value) {
+        // parse the whole value and get any expressions on it
+        // (parseValue() will modify the `attr` object)
         this.parseValue(state, data, attr, value, end)
       }
 
@@ -408,15 +415,16 @@ assign(HtmlParser.prototype, {
    */
   parseValue(state, data, attr, quote, start) {
 
-    // Usually, the value's first char (`quote`) is a quote. If not, this is
-    // an unquoted value and we need adjust the start position.
+    // Usually, the value's first char (`quote`) is a quote and the `start`
+    // parameter is the stating position of the value.
+    // If not, this is an unquoted value and we need adjust the starting position.
     if (quote !== '"' && quote !== "'") {
       quote = ''                            // first char of value is not a quote
-      start--                               // move the start to this char
+      start--                               // adjust the starting position
     }
 
-    // Dynamically, make a regexp that matches the closing quote (ending char
-    // for unquoted values) or an opening brace of an expression.
+    // Get a regexp that matches the closing quote, ending char of unquoted values,
+    // or the closing brace if we have an expression.
     const re = this._b0re(`(${quote || '[>/\\s]'})`)
     const expr = []
     let mm, tmp
@@ -433,7 +441,7 @@ assign(HtmlParser.prototype, {
       tmp = this.extractExpr(data, mm.index)
       if (tmp) {
         if (typeof tmp == 'string') {
-          attr.replace = tmp
+          attr.replace = tmp                // it is an escaped opening brace
         } else {
           expr.push(tmp)
           re.lastIndex = tmp.end
@@ -441,6 +449,7 @@ assign(HtmlParser.prototype, {
       }
     }
 
+    // adjust the bounds of the value and save its content
     const end = mm.index
     attr.value = data.slice(start, end)
     attr.valueStart = start

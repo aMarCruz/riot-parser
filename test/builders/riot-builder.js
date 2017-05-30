@@ -64,7 +64,6 @@ Object.assign(RiotBuilder.prototype, {
     const nodes = input.output
     const data = input.data
     this.reset()
-    debugger
     this.riotTag = this.getRiotTag(input.root)
 
     for (let pos = 0; pos < nodes.length; pos++) {
@@ -72,8 +71,8 @@ Object.assign(RiotBuilder.prototype, {
 
       if (node.type !== T.TAG) {
         // not a container element...
-        if (node.type === T.TEXT && !this.stop) {
-          this.printText(node, data)
+        if (node.type === T.TEXT) {
+          this.pushText(node, data)
         }
 
       } else {
@@ -149,7 +148,7 @@ Object.assign(RiotBuilder.prototype, {
     }
   },
 
-  printText(node, data) {
+  pushText(node, data) {
     if (node.type === T.TEXT) {
       const compact = !this._raw && this.options.compact
       let text = data.slice(node.start, node.end)
@@ -166,35 +165,43 @@ Object.assign(RiotBuilder.prototype, {
     }
   },
 
-  pushExpr(type, expr) {
+  pushExpr(expr) {
     const ekey = `${this.riotTag}:${++this.exprIdx}`
-    expr.type = type === T.TEXT ? 'T' : 'V'
+    expr.type = expr.type === T.TEXT ? 'T' : 'V'
     this.expressions[ekey] = expr
     return ekey
   },
 
   _re: {},
 
-  parseNode(node, code, offset) {
+  parseNode(node, code, start) {
     const exprList = node.expr
     const repChar = node.replace
+    const re = repChar
+      ? this._re[repChar] || (this._re[repChar] = RegExp(`\\\\${repChar}`, 'g'))
+      : 0
 
     if (exprList) {
+      // emit { parts, start, end, type }
       const parts = []
-      let pos = 0
-      debugger
+      let end = 0
       for (let i = 0; i < exprList.length; i++) {
         const expr = exprList[i]
-        const ekey = this.pushExpr(node.type, expr)
-        parts.push(`${code.slice(pos, expr.start - offset)}${$_BP_LEFT}${ekey}${$_BP_RIGHT}`)
-        pos = expr.end - offset
+        const pos = end
+        end = expr.start - start
+        let text = code.slice(pos, end)
+        if (re) {
+          text = text.replace(re, repChar)
+        }
+        parts.push(text, expr.text)
+        end = expr.end - start
       }
-      if (pos + offset < node.end) parts.push(code.slice(pos))
-      code = parts.join('')
-    }
-
-    if (repChar) {
-      const re = this._re[repChar] || (this._re[repChar] = RegExp(`\\${repChar}`, 'g'))
+      if ((end += start) < node.end) {
+        const text = code.slice(end)
+        parts.push(re ? text.replace(re, repChar) : text)
+      }
+      code = `${$_BP_LEFT}${this.pushExpr({ type: node.type, parts, start, end, expr: exprList })}${$_BP_RIGHT}`
+    } else if (re) {
       code = code.replace(re, repChar)
     }
 

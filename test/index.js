@@ -12,7 +12,7 @@ describe('The Parser', function () {
   const theTests = require('./tparser')
   const titles = Object.keys(theTests)
 
-  const _TDEBUG = 0//'comments are ignored by default'
+  const _TDEBUG = 0//'empty tags with comment inside parsed as attributes'
 
   for (let i = 0; i < titles.length; i++) {
     const title = titles[i]
@@ -165,7 +165,7 @@ describe('Tree Builder', function () {
 
 })
 
-describe('Riot Builder', function () {
+describe.only('Riot Builder sample', function () {
   const riotBuilder = require('./builders/riot-builder')
 
   it('test 1', function () {
