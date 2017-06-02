@@ -1,10 +1,10 @@
 {
-  "name": "riot-parser",
+  "name": "riot-tag-parser",
   "version": "0.1.1",
-  "description": "The riot parser for HTML files",
-  "main": "./dist/riot-parser.js",
-  "module": "./dist/riot-parser.es.js",
-  "jsnext:main": "./dist/riot-parser.es.js",
+  "description": "The parser for Riot tags",
+  "main": "./dist/tag-parser.js",
+  "module": "./dist/tag-parser.es.js",
+  "jsnext:main": "./dist/tag-parser.es.js",
   "license": "MIT",
   "engines": {
     "node": ">=4.0"
@@ -14,6 +14,7 @@
     "lint": "eslint src test/index.js",
     "pretest": "rollup -m -c",
     "build": "rm -rf dist/* && rollup -m -c",
+    "samples": "node ./test/samples.js",
     "prepublish": "npm run lint && rm -rf dist/* && npm test"
   },
   "files": [
@@ -22,11 +23,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/riot/riot-parser"
+    "url": "https://github.com/riot/parser"
   },
   "keywords": [
     "html",
     "html5",
+    "tag",
     "parser",
     "javascript"
   ],
@@ -35,12 +37,12 @@
     "email": "amarcruzbox-git@yahoo.com",
     "url": "https://github.com/riot"
   },
-  "homepage": "https://github.com/riot/riot-parser",
-  "bugs": "https://github.com/riot/riot-parser/issues",
+  "homepage": "https://github.com/riot/parser",
+  "bugs": "https://github.com/riot/parser/issues",
   "devDependencies": {
     "eslint": "^3.19.0",
     "expect": "^1.20.2",
-    "mocha": "^3.4.1",
+    "mocha": "^3.4.2",
     "rollup": "^0.41.6",
     "rollup-plugin-buble": "^0.15.0",
     "rollup-plugin-cleanup": "^1.0.0",

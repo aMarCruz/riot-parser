@@ -1,22 +1,6 @@
-/**
- * Simple html builder...
- *
- * - Regular text:
- *   Whitespace compression, incluing text in `style` sections (Optional removal of whitespace-only text).
- * - Tags names:
- *   Removes extra whitespace and convert names to lowercase, except DOCTYPE that is uppercased.
- * - Self-closing tags:
- *   Removes the '/' and, if is not a void tag, adds the closing tag.
- * - Closing void tags:
- *   Raises error.
- * - Attributes:
- *   Removes extra whitespace, convert names to lowercase, removes empty values, and enclose values in double quotes.
- * - Comments:
- *   Convertion of short notation (`<! >`) to regular (`<!-- -->`).
- *
+/*
+ * Simple html builder.
  * Throws on unclosed tags or closing tags without start tag.
- *
- * @module htmlbuilder
  */
 
 const VOID_TAGS = require('./void-tags')
@@ -104,8 +88,8 @@ Object.assign(HtmlBuilder.prototype, {
     const name   = node.name
     const allTag = [name]
 
-    if (node.attrs) {
-      node.attrs.forEach(a => {
+    if (node.attributes) {
+      node.attributes.forEach(a => {
         const s = a.name
         allTag.push(a.value ? `${s}="${a.value.replace(/"/g, '&quot;')}"` : s)
       })

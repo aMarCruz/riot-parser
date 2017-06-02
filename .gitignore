@@ -1,7 +1,6 @@
 *.bak
 *.log
 
-# --------------------
 # OSX Files
 # --------------------
 .DS_Store
@@ -12,7 +11,6 @@ Icon
 .Spotlight-V100
 .Trashes
 
-# --------------------
 # Windows Files
 # --------------------
 Thumbs.db
@@ -25,13 +23,11 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 
-# --------------------
 # Sublime Text Files
 # --------------------
 *.sublime-project
 *.sublime-workspace
 
-# --------------------
 # IntelliJ Files
 # --------------------
 *.iml
@@ -40,7 +36,6 @@ $RECYCLE.BIN/
 .idea/
 out/
 
-# --------------------
 # Eclipse Files
 # --------------------
 .project
@@ -48,22 +43,15 @@ out/
 .classpath
 .settings/
 
-# --------------------
 # VS Code Files
 # --------------------
 .vscode
 /jsconfig.json
 
-# --------------------
 # App Files
 # --------------------
 node_modules
-bower_components
 coverage
 make.js
 
 /dist
-_test
-
-!.gitmodules
-!.travis.yml

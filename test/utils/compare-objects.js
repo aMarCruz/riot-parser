@@ -1,5 +1,5 @@
 /*
-  http://stackoverflow.com/questions/1068834/object-comparison-in-javascript
+  Simple object comparison.
 */
 'use strict'
 
@@ -11,15 +11,12 @@ function isEmpty(v) {
 }
 
 function compareObjects(a, b) {
-
-  var p
-
   if (a === b) return true
+  var p
 
   for (p in a) {
     if (typeof b[p] == 'undefined') {
-      // console.log('Missing property: ', p);
-      if (/^(?:start|end|attrs)$/.test(p) && isEmpty(a[p])) {
+      if (/^(?:start|end)$/.test(p) && isEmpty(a[p])) {
         continue
       }
       return false
@@ -28,31 +25,26 @@ function compareObjects(a, b) {
       switch (typeof a[p]) {
         case 'object':
           if (!compareObjects(a[p], b[p])) {
-            // console.log('Mismatched property: ', p);
             return false
           }
           break
         case 'function':
           if (typeof b[p] != 'function') {
-            // console.log('Mismatched property: ', p);
             return false
           }
           break
         default:
           if (a[p] !== b[p]) {
-            // console.log('Mismatched property: ', p);
             return false
           }
       }
     } else if (a[p] !== b[p]) {
-      // console.log('Poop: ', p);
       return false
     }
   }
 
   for (p in b) {
     if (typeof a[p] == 'undefined') {
-      // console.log('Extra property: ', p);
       return false
     }
   }

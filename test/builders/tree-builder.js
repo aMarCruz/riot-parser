@@ -90,7 +90,7 @@ Object.assign(TreeBuilder.prototype, {
   },
 
   setExpr(node, text, offset) {
-    const exprList = node.expr
+    const exprList = node.expressions
     const parts = []
     let pos = 0
     debugger
@@ -105,22 +105,22 @@ Object.assign(TreeBuilder.prototype, {
       pos = expr.end -= offset
     }
     if (pos < text.length) parts.push(text.slice(pos))
-    node.expr = parts
+    node.expressions = parts
   },
 
   pushText(node, data) {
-    if (node.expr) {
+    if (node.expressions) {
       this.setExpr(node, data.slice(node.start, node.end), node.start)
     }
     this.pushNode(node)
   },
 
   pushTag(node) {
-    const attrList = node.attrs
+    const attrList = node.attributes
     if (attrList) {
       for (let i = 0; i < attrList.length; i++) {
         const attr = attrList[i]
-        if (attr.expr) {
+        if (attr.expressions) {
           this.setExpr(attr, attr.value, attr.valueStart)
           delete attr.value
         }

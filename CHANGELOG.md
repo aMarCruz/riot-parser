@@ -1,4 +1,4 @@
-# Changes for riot-html-parser
+# Changes for riot-parser
 
-### v0.1.0-beta.1
-- Initial port of perf-html-parser
+### v0.0.1
+- Initial release

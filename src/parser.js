@@ -1,46 +1,44 @@
 /**
- * @module HtmlParser
+ * @module TagParser
  * @version v$_VERSION
  */
 
 import assign from './utils/assign'
 import extractExpr from './extract-expr'
-
 //#if !_T
-import $_T from './nodetypes'
+import $_T from './node-types'
 //#endif
 
 /**
  * Matches the start of valid tags names; used with the first 2 chars after the `'<'`.
- * @const {RegExp}
  */
 const TAG_2C = /^(?:\/[a-zA-Z>]|[a-zA-Z][^\s>/]?)/
 
 /**
  * Matches valid tags names AFTER the validation with `TAG_2C`.
  * $1: tag name including any `'/'`, $2: non self-closing brace (`>`) w/o attributes.
- * @const {RegExp}
  */
 const TAG_NAME = /\/(>)|(\/?[^\s>/]+)\s*(>)?/g
 
 /**
  * Matches an attribute name-value pair (both can be empty).
  * $1: attribute name, $2: value including any quotes.
- * @const {RegExp}
  */
 const ATTR_START = /(\S[^>/=\s]*)(?:\s*=\s*([^>/])?)?/g
 
+/**
+ * Matches the closing tag of a `script` and `style` block.
+ * Used by parseText fo find the end of the block.
+ */
 const RE_SCRYLE = {
-  // Matches the closing tag of a `script` block
   script: /<\/script\s*>/gi,
-  // Matches the closing tag of a `style` block
   style: /<\/style\s*>/gi,
 }
 
 
-// The HtmlParser class ===============================================
+// The TagParser class ===============================================
 
-function HtmlParser(options) {
+function TagParser(options) {
 
   this.options = assign({
     comments: false,
@@ -53,16 +51,15 @@ function HtmlParser(options) {
 }
 
 
-// HtmlParser methods and properties ==================================
+// TagParser methods and properties ==================================
 
-assign(HtmlParser.prototype, {
+assign(TagParser.prototype, {
 
   nodeTypes: {
     TAG:      $_T.TAG,          // ELEMENT_NODE (tag)
     ATTR:     $_T.ATTR,         // ATTRIBUTE_NODE (attribute)
     TEXT:     $_T.TEXT,         // TEXT_NODE (#text)
     COMMENT:  $_T.COMMENT,      // COMMENT_NODE (#comment)
-    DOCTYPE:  $_T.DOCTYPE,      // DOCUMENT_TYPE_NODE (html)
     EXPR:     $_T.EXPR          // DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC (riot)
   },
 
@@ -71,13 +68,13 @@ assign(HtmlParser.prototype, {
     all of them having a start/end information.
     (`end` points to the character following the node).
 
-    TAG     -- has `name` (ex. "div" or "/div"), `selfclose`, and `attrs`.
+    TAG     -- has `name` (ex. "div" or "/div"), `selfclose`, and `attributes`.
     TEXT    -- can have an `expr` property in addition to start/end.
     COMMENT -- has no props other than start/end.
 
-    `TAG.attrs` is an array of objects with `name`, `value` and `expr` props.
+    `TAG.attributes` is an array of objects with `name`, `value` and `expressions` props.
 
-    `expr` is an array of objects with start/end properties, relative to the
+    `expressions` is an array of objects with start/end properties, relative to the
     whole buffer.
   */
   _parse(data) {
@@ -230,7 +227,7 @@ assign(HtmlParser.prototype, {
     }
 
     if (expr && expr.length) {
-      q.expr = q.expr ? q.expr.concat(expr) : expr
+      q.expressions = q.expressions ? q.expressions.concat(expr) : expr
     }
 
     if (rep) q.replace = rep
@@ -276,8 +273,8 @@ assign(HtmlParser.prototype, {
 
     //assert(q && q.type === Mode.TAG, 'no previous tag for the attr!')
     state.pos = q.end = attr.end
-    if (q.attrs) q.attrs.push(attr)
-    else q.attrs = [attr]
+    if (q.attributes) q.attributes.push(attr)
+    else q.attributes = [attr]
   },
 
   /**
@@ -455,7 +452,7 @@ assign(HtmlParser.prototype, {
     attr.valueStart = start
     attr.end = quote ? end + 1 : end
     if (expr.length) {
-      attr.expr = expr
+      attr.expressions = expr
     }
   },
 
@@ -527,6 +524,6 @@ assign(HtmlParser.prototype, {
 
 })
 
-export default function htmlParser(options) {
-  return new HtmlParser(options)
+export default function tagParser(options) {
+  return new TagParser(options)
 }

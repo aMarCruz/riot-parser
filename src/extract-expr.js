@@ -1,6 +1,7 @@
 /**
  * Mini-parser for expressions.
- * This main pourpose of this module is to find the end of an expression.
+ * This main pourpose of this module is to find the end of an expression
+ * and return its text without the enclosing brackets.
  * Does not works with comments, but supports ES6 template strings.
  * @module parseExpr
  */
@@ -36,7 +37,6 @@ ExprExtractor.prototype = {
 
   /**
    * Parses the code string searching the end of the expression.
-   *
    * It skips braces, quoted strings, regexes, and ES6 template literals.
    *
    * @param   {string} code  - Buffer to parse
@@ -157,6 +157,7 @@ ExprExtractor.prototype = {
     throw new Error('Unclosed ES6 template')
   },
 
+  // Makes an optimal regex that matches brackets and backquotes.
   _reChar(c) {
     let s
     if (c.length === 1) {

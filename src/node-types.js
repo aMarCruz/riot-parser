@@ -6,7 +6,7 @@ export default {
   TEXT: 3,                // TEXT_NODE (#text)
   COMMENT: 8,             // COMMENT_NODE (#comment)
   CDATA: 4,               // CDATA_SECTION_NODE
-  DOCTYPE: 10,            // DOCUMENT_TYPE_NODE (html)
+//DOCTYPE: 10,            // DOCUMENT_TYPE_NODE (html)
 //DOCUMENT: 9,            // DOCUMENT_NODE
   EXPR: 32                // DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC (riot)
 }

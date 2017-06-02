@@ -149,33 +149,3 @@ describe('HTML Builder 2', function () {
   })
 
 })
-
-describe('Tree Builder', function () {
-  const builder = require('./builders/tree-builder')()
-
-  it('test 1', function () {
-    const source  = fs.readFileSync('fixtures/box.tag', 'utf8').trim()
-    const parse   = htmlParser().parse
-    debugger
-
-    const result = builder.build(parse(source))
-    console.log(result)
-    expect(1).toBe(1)
-  })
-
-})
-
-describe.only('Riot Builder sample', function () {
-  const riotBuilder = require('./builders/riot-builder')
-
-  it('test 1', function () {
-    const source  = fs.readFileSync('fixtures/box.tag', 'utf8').trim()
-    const parse   = htmlParser().parse
-    const builder = riotBuilder({ compact: true })
-
-    const result = builder.build(parse(source))
-    console.log(result)
-    expect(1).toBe(1)
-  })
-
-})

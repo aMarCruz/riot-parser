@@ -129,8 +129,8 @@ Object.assign(RiotBuilder.prototype, {
     const name   = node.name
     const allTag = [name]
 
-    if (node.attrs) {
-      node.attrs.forEach(a => {
+    if (node.attributes) {
+      node.attributes.forEach(a => {
         const value = this.parseNode(a, a.value, a.valueStart)
         allTag.push(value ? `${a.name}="${value}"` : a.name)
       })
@@ -175,7 +175,7 @@ Object.assign(RiotBuilder.prototype, {
   _re: {},
 
   parseNode(node, code, start) {
-    const exprList = node.expr
+    const exprList = node.expressions
     const repChar = node.replace
     const re = repChar
       ? this._re[repChar] || (this._re[repChar] = RegExp(`\\\\${repChar}`, 'g'))
@@ -209,8 +209,8 @@ Object.assign(RiotBuilder.prototype, {
   },
 
   getRiotTag(node) {
-    if (node.attrs) {
-      const attr = node.attrs.find(a => a.name === 'data-is' || a.name === 'data-riot-tag')
+    if (node.attributes) {
+      const attr = node.attributes.find(a => a.name === 'data-is' || a.name === 'data-riot-tag')
       if (attr) {
         return attr.value
       }

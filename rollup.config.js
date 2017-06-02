@@ -2,20 +2,20 @@
 import jscc    from 'rollup-plugin-jscc'
 import buble   from 'rollup-plugin-buble'
 import cleanup from 'rollup-plugin-cleanup'
-import types   from './src/nodetypes'
+import types   from './src/node-types'
 
 const external = ['fs', 'path']
 
 export default {
-  entry: 'src/htmlparser.js',
+  entry: 'src/parser.js',
   plugins: [
     jscc({ values: { _T: types } }),
-    buble(),
+    buble({ firefox: 45, ie: 10, node: 4 }),
     cleanup()
   ],
   external: external,
   targets: [
-    { dest: 'dist/riot-parser.js', format: 'cjs' },
-    { dest: 'dist/riot-parser.es.js', format: 'es' }
+    { dest: 'dist/tag-parser.js', format: 'cjs' },
+    { dest: 'dist/tag-parser.es.js', format: 'es' }
   ]
 }
