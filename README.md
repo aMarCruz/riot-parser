@@ -12,15 +12,18 @@ There 3 main node types:
 
 Opening tags can contain attributes. Text and attribute values can contain expressions.
 
+There's no support for untagged JavaScript block.
+
 The value returned by the parser is an object like this:
 
 ```js
 {
   data,         // String of the given html fragment with no changes.
-  output,       // Array of objects with information about the parsed tags.
-  root          // Object for the opening tag of the root element.
+  output        // Array of objects with information about the parsed tags.
 }
 ```
+
+The first element of `output` is the opening tag of the root element.
 
 ### Commands
 

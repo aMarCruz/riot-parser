@@ -79,16 +79,22 @@ assign(TagParser.prototype, {
   */
   _parse(data) {
     const me = this
-    const output = []
+
+    // Creating the state in the closure and passing it as a parameter is more
+    // efficient and allows to use the same parser instance asynchronously.
     const state = {
-      pos: 0,
-      last: null,
-      count: -1,
-      output
+      pos: 0,                 // parsing position
+      last: null,             // current open tag
+      count: -1,              // count of nested tags with the name as root
+      output: []              // array of pseudo-nodes
     }
 
     const length = data.length
     let type = $_T.TEXT
+
+    // The "count" property is set to 1 when the first tag is found.
+    // This becomes the root and precedent text or comments are discarded.
+    // So, at the end of the parsing count must be zero.
 
     while (state.pos < length && state.count) {
 
@@ -101,12 +107,10 @@ assign(TagParser.prototype, {
       } else if (type === $_T.ATTR) {
         type = me.parseAttr(state, data)
 
-      } else {
-        break
       }
     }
 
-    if (!state.root) {
+    if (state.count < 0) {
       me._err(state, data, 'Root tag not found.')
     }
 
@@ -114,7 +118,7 @@ assign(TagParser.prototype, {
       me._err(state, data, 'Unexpected end of file')
     }
 
-    return { data, output, root: state.root }
+    return { data, output: state.output }
   },
 
   /**
@@ -157,7 +161,7 @@ assign(TagParser.prototype, {
   },
 
   /**
-   * Creates a global regex for the given string and the left bracket.
+   * Creates regex for the given string and the left bracket.
    *
    * @param   {string} str - String to add
    * @returns {RegExp} The resulting regex.
@@ -244,20 +248,21 @@ assign(TagParser.prototype, {
    * @param   {number}  end   - Ending position (last char of the tag + 1)
    */
   pushTag(state, type, name, start, end) {
+    const root = state.root
+
     state.pos = end
     state.output.push(state.last = this.newNode(type, name, start, end))
 
-    if (state.root) {
-      if (name === state.closeName) {
-        state.count--
-      } else if (name === state.root.name) {
+    if (root) {
+      if (name === root.name) {
         state.count++
+      } else if (name === root.close) {
+        state.count--
       }
     } else {
-      // start with root
-      if (state.output.length > 1) state.output.splice(0, state.output.length - 1)
-      state.root = state.last
-      state.closeName = '/' + name
+      // start with root (keep ref to output)
+      state.output.splice(0, state.output.length - 1)
+      state.root = { name: state.last.name, close: `/${name}` }
       state.count = 1
     }
   },
@@ -273,8 +278,11 @@ assign(TagParser.prototype, {
 
     //assert(q && q.type === Mode.TAG, 'no previous tag for the attr!')
     state.pos = q.end = attr.end
-    if (q.attributes) q.attributes.push(attr)
-    else q.attributes = [attr]
+    if (q.attributes) {
+      q.attributes.push(attr)
+    } else {
+      q.attributes = [attr]
+    }
   },
 
   /**
@@ -369,7 +377,7 @@ assign(TagParser.prototype, {
       // Root tag, we need decrement the counter as we are changing mode.
       state.pos = tag.end = _CH.lastIndex
       if (tag.selfclose && state.root.name === tag.name) {
-        state.count--   // pop nested root
+        state.count--                       // "pop" root tag
       }
       return $_T.TEXT
 
@@ -378,7 +386,7 @@ assign(TagParser.prototype, {
       tag.selfclose = true                  // the next loop
 
     } else {
-      delete tag.selfclose                  // ensure unmark as selfclosing
+      delete tag.selfclose                  // ensure unmark as selfclosing tag
       // its a tag, go get the name and the first char of the value (mostly a quote)
       // we can find no value at all (even if there is an equal sign).
       const re    = ATTR_START              // (\S[^>/=\s]*)(?:\s*=\s*([^>/])?)? g
